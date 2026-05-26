@@ -1,11 +1,7 @@
 /* css/styles.css
-   Dominoes — وردتي Edition (Visual Layer)
-   - Design tokens (centralized)
-   - Glassmorphism panels
-   - High-contrast dark theme
-   - Hardware-accelerated animations (transform/opacity)
-   - Responsive, non-wrapping horizontal train
-   - Optimized for 60FPS: transitions use transform/opacity only
+   Dominoes — وردتي Edition
+   نسخة معدّلة: بلاطات بيضاء ونقاط سوداء، تحسين تباين، وحماية حالات التحميل البطيء.
+   احفظ هذا الملف كـ css/styles.css واستبدل النسخة الحالية.
 */
 
 /* =========================
@@ -14,24 +10,17 @@
 :root{
   --bg-900: #071018;
   --bg-800: #0b1220;
-  --glass-opa: 0.08;
-  --glass-border: rgba(255,255,255,0.04);
+  --muted: #6f7b86;
   --accent-gold: #ffd166;
-  --accent-cyan: #7ef9ff;
-  --muted: #9aa4b2;
-  --tile-light: #e6eef6;
+  --accent-cyan: #00a6c7;
+  --tile-white: #ffffff;
+  --tile-shadow: rgba(2,6,12,0.12);
 
   --radius-lg: 14px;
   --radius-md: 10px;
 
-  --space-xs: 6px;
-  --space-sm: 12px;
-  --space-md: 18px;
-  --space-lg: 28px;
-
   --motion-fast: 160ms;
   --motion-medium: 360ms;
-  --motion-slow: 600ms;
   --easing: cubic-bezier(.2,.9,.3,1);
 
   --max-width: 1200px;
@@ -41,9 +30,12 @@
    Base / Reset
    ========================= */
 *{ box-sizing:border-box; }
-html,body{ height:100%; margin:0; font-family:Inter,system-ui,Arial; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; background:
-  radial-gradient(900px 400px at 10% 10%, rgba(14,18,24,0.6), transparent),
-  linear-gradient(180deg,var(--bg-900), #041018 140%); color:var(--tile-light); -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+html,body{ height:100%; margin:0; font-family:Inter, system-ui, "Segoe UI", Arial; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  background:
+    radial-gradient(900px 400px at 10% 10%, rgba(14,18,24,0.6), transparent),
+    linear-gradient(180deg,var(--bg-900), #041018 140%);
+  color:#0b1220;
+}
 
 /* =========================
    App container
@@ -58,29 +50,30 @@ html,body{ height:100%; margin:0; font-family:Inter,system-ui,Arial; -webkit-fon
 }
 
 /* =========================
-   Glass panels
+   Glass panels (header/footer/board)
    ========================= */
 .panel {
   background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
   border-radius: var(--radius-lg);
-  border: 1px solid var(--glass-border);
+  border: 1px solid rgba(255,255,255,0.04);
   box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-  backdrop-filter: blur(8px) saturate(120%);
+  backdrop-filter: blur(6px) saturate(120%);
   padding:12px;
 }
 
 /* =========================
    Header / Scoreboard
    ========================= */
-.header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.header { display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--tile-white); }
 .score { display:flex; gap:12px; align-items:center; }
 .score-card {
   min-width:150px;
   padding:10px 14px;
   border-radius:10px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
-  border:1px solid rgba(255,255,255,0.02);
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.96));
+  border:1px solid rgba(0,0,0,0.06);
   text-align:center;
+  color:#071018;
 }
 .score-card h4{ margin:0; color:var(--accent-gold); font-size:13px; letter-spacing:0.6px; }
 .score-card p{ margin:6px 0 0 0; font-weight:800; font-size:20px; }
@@ -104,41 +97,41 @@ html,body{ height:100%; margin:0; font-family:Inter,system-ui,Arial; -webkit-fon
   overflow-x:auto;
   -webkit-overflow-scrolling:touch;
   scroll-behavior:smooth;
-  white-space:nowrap; /* prevent wrapping */
+  white-space:nowrap;
   will-change: scroll-position;
 }
 .train-wrap::-webkit-scrollbar{ height:8px; }
-.train-wrap::-webkit-scrollbar-thumb{ background: rgba(255,255,255,0.04); border-radius:8px; }
+.train-wrap::-webkit-scrollbar-thumb{ background: rgba(0,0,0,0.12); border-radius:8px; }
 
 /* placement hints */
 .placement-hints { position:absolute; top:50%; transform:translateY(-50%); left:12px; display:flex; gap:8px; z-index:30; pointer-events:none; }
-.hint-dot { width:12px; height:12px; border-radius:50%; background: linear-gradient(180deg,var(--accent-cyan), #3ee7ff); box-shadow: 0 8px 20px rgba(62,231,255,0.08); opacity:0; transform:scale(0.6); transition: all var(--motion-fast) var(--easing); }
+.hint-dot { width:12px; height:12px; border-radius:50%; background: linear-gradient(180deg,var(--accent-cyan), #00d4ff); box-shadow: 0 8px 20px rgba(0,166,199,0.08); opacity:0; transform:scale(0.6); transition: all var(--motion-fast) var(--easing); }
 .hint-dot.show{ opacity:1; transform:scale(1); }
 
 /* boneyard */
 .boneyard { position:absolute; top:12px; right:12px; display:flex; gap:8px; align-items:center; z-index:40; }
 .bone-stack {
   width:72px; height:44px; border-radius:10px;
-  background: linear-gradient(180deg,#0b1220,#071018);
-  border:1px solid rgba(255,255,255,0.03);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  background: linear-gradient(180deg,#ffffff,#f2f2f2);
+  border:1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
   display:flex; align-items:center; justify-content:center;
-  color:var(--muted); font-weight:700; font-size:13px; cursor:pointer; user-select:none;
+  color:#071018; font-weight:700; font-size:13px; cursor:pointer; user-select:none;
   transition: transform var(--motion-fast) var(--easing);
 }
 .bone-stack:active{ transform: translateY(2px); }
 
 /* =========================
-   Domino tile visuals
+   Domino tile visuals (WHITE tile, BLACK pips)
    ========================= */
 .tile {
   display:inline-flex;
   width:92px;
   height:48px;
   border-radius:10px;
-  background: linear-gradient(180deg,#0f1724,#0b1220);
-  border:1px solid rgba(255,255,255,0.03);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+  background: linear-gradient(180deg,var(--tile-white), #f7f7f7);
+  border:1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 8px 20px var(--tile-shadow), inset 0 1px 0 rgba(255,255,255,0.6);
   align-items:center;
   justify-content:space-between;
   padding:8px;
@@ -147,20 +140,21 @@ html,body{ height:100%; margin:0; font-family:Inter,system-ui,Arial; -webkit-fon
   will-change: transform, opacity;
   transition: transform var(--motion-fast) var(--easing), box-shadow var(--motion-fast) var(--easing), opacity var(--motion-fast) var(--easing);
   user-select:none;
+  color:#071018;
 }
 .tile .half { display:flex; align-items:center; justify-content:center; gap:6px; flex:1; }
-.tile .divider { width:2px; height:100%; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.2)); border-radius:2px; margin:0 6px; }
+.tile .divider { width:2px; height:100%; background: linear-gradient(180deg, rgba(0,0,0,0.06), rgba(0,0,0,0.12)); border-radius:2px; margin:0 6px; }
 
-/* pip */
-.pip { width:8px; height:8px; border-radius:50%; background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.06), rgba(255,255,255,0.02)), var(--accent-cyan); box-shadow: 0 2px 6px rgba(0,0,0,0.6); }
+/* pip (black) */
+.pip { width:8px; height:8px; border-radius:50%; background: #0b0b0b; box-shadow: 0 1px 2px rgba(0,0,0,0.35); }
 
 /* tactile states */
-.tile:hover { transform: translateY(-8px) rotateX(2deg) scale(1.03); box-shadow: 0 20px 60px rgba(0,0,0,0.7); }
+.tile:hover { transform: translateY(-8px) rotateX(2deg) scale(1.03); box-shadow: 0 20px 60px rgba(0,0,0,0.12); }
 .tile:active { transform: translateY(-2px) scale(0.995); }
-.tile:focus { outline: 3px solid rgba(126,249,255,0.12); outline-offset:4px; }
+.tile:focus { outline: 3px solid rgba(0,0,0,0.06); outline-offset:4px; }
 
 /* playable highlight */
-.tile.playable { box-shadow: 0 22px 70px rgba(126,249,255,0.06), 0 10px 40px rgba(0,0,0,0.7); transform: translateY(-10px) scale(1.04); border:1px solid rgba(126,249,255,0.08); }
+.tile.playable { box-shadow: 0 22px 70px rgba(0,0,0,0.12); transform: translateY(-10px) scale(1.04); border:1px solid rgba(0,0,0,0.08); }
 
 /* small screens */
 @media (max-width:640px){
@@ -171,19 +165,19 @@ html,body{ height:100%; margin:0; font-family:Inter,system-ui,Arial; -webkit-fon
 /* =========================
    Footer / Player hand
    ========================= */
-.footer { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-.hand { display:flex; gap:10px; align-items:center; justify-content:center; overflow:auto; padding:8px; border-radius:10px; background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00)); border:1px solid rgba(255,255,255,0.02); }
+.footer { display:flex; align-items:center; justify-content:space-between; gap:12px; color:#fff; }
+.hand { display:flex; gap:10px; align-items:center; justify-content:center; overflow:auto; padding:8px; border-radius:10px; background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.96)); border:1px solid rgba(0,0,0,0.06); }
 
 /* =========================
    Modal
    ========================= */
 .modal-backdrop { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background: linear-gradient(180deg, rgba(2,6,12,0.6), rgba(2,6,12,0.85)); z-index:60; backdrop-filter: blur(8px) saturate(120%); }
-.modal { width:min(720px, 92%); padding:20px; border-radius:var(--radius-lg); background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid var(--glass-border); box-shadow: 0 30px 80px rgba(0,0,0,0.7); transform: translateY(8px); transition: transform var(--motion-medium) var(--easing), opacity var(--motion-medium) var(--easing); }
+.modal { width:min(720px, 92%); padding:20px; border-radius:var(--radius-lg); background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.96)); border:1px solid rgba(0,0,0,0.06); box-shadow: 0 30px 80px rgba(0,0,0,0.12); transform: translateY(8px); transition: transform var(--motion-medium) var(--easing), opacity var(--motion-medium) var(--easing); color:#071018; }
 
 /* Buttons */
-.btn { display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:10px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.04); color:var(--tile-light); cursor:pointer; transition: transform var(--motion-fast) var(--easing), box-shadow var(--motion-fast) var(--easing); }
+.btn { display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:10px; background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.96)); border:1px solid rgba(0,0,0,0.06); color:#071018; cursor:pointer; transition: transform var(--motion-fast) var(--easing), box-shadow var(--motion-fast) var(--easing); }
 .btn:active { transform: translateY(1px) scale(0.998); }
-.btn.primary { background: linear-gradient(180deg, rgba(255,209,102,0.12), rgba(255,209,102,0.06)); color:#071018; border:1px solid rgba(255,209,102,0.18); }
+.btn.primary { background: linear-gradient(180deg, var(--accent-gold), #ffd9a6); color:#071018; border:1px solid rgba(0,0,0,0.06); }
 
 /* small helpers */
 .muted { color:var(--muted); font-size:13px; }
@@ -198,9 +192,9 @@ html,body{ height:100%; margin:0; font-family:Inter,system-ui,Arial; -webkit-fon
   100%{ transform: scale(1) rotate(0deg); opacity:1; }
 }
 
-/* Utility: small responsive tweaks */
+/* Responsive tweaks */
 @media (max-width:900px) {
   .app { padding:12px; }
   .header { flex-direction:column; align-items:flex-start; gap:10px; }
   .controls { align-self:flex-end; }
-}
+   }

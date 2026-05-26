@@ -1,0 +1,713 @@
+Enter<!doctype html>
+<html lang="ar">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dominoes — Classic Draw (Luxury Dark) — Updated</title>
+
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --panel:#0f1720;
+      --muted:#9aa4b2;
+      --accent:#ffd166;
+      --accent-2:#7ef9ff;
+      --tile:#e9eef6;
+      --shadow: rgba(0,0,0,0.6);
+    }
+    html,body,#app{ height:100%; background: linear-gradient(180deg,var(--bg), #071018 120%); color:#e6eef6; font-family:Inter,system-ui,Arial; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+
+    .app-wrap{ max-width:1200px; margin:24px auto; padding:20px; }
+
+    .scoreboard{ background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:14px; padding:14px; display:flex; gap:12px; align-items:center; justify-content:space-between; border:1px solid rgba(255,255,255,0.03); box-shadow: 0 6px 30px rgba(2,6,12,0.6); }
+
+    .score-card{ background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00)); border-radius:10px; padding:10px 14px; min-width:160px; text-align:center; box-shadow: 0 8px 20px rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.02); }
+    .score-card h4{ font-weight:700; color:var(--accent); margin:0; font-size:13px; }
+    .score-card p{ margin:0; font-weight:700; font-size:20px; color:#e6eef6; }
+
+    .board-wrap{ margin-top:18px; background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00)); border-radius:16px; padding:18px; min-height:320px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; border:1px solid rgba(255,255,255,0.02); box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+
+    /* TRAIN: force single-line horizontal train with horizontal scroll */
+    .train{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      justify-content:flex-start;
+      flex-wrap: nowrap; /* changed: keep single horizontal line */
+      max-width:100%;
+      padding:12px;
+      transform-origin:center;
+      transition:transform .35s cubic-bezier(.2,.9,.3,1);
+      overflow-x: auto; /* allow horizontal scroll */
+      scroll-behavior: smooth; /* smooth scrolling */
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .domino{ width:84px; height:44px; border-radius:8px; background: linear-gradient(180deg, #f8fafc, #e6eef6); box-shadow: 0 8px 18px rgba(2,6,12,0.6), 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.6); border:1px solid rgba(0,0,0,0.12); display:flex; align-items:center; justify-content:space-between; padding:6px; gap:6px; transform-origin:center; transition: transform .28s cubic-bezier(.2,.9,.3,1), box-shadow .18s; position:relative; user-select:none; -webkit-user-select:none; }
+    .domino.dark{ background: linear-gradient(180deg, #0b1220, #0f1724); color:var(--tile); border:1px solid rgba(255,255,255,0.03); box-shadow: 0 10px 30px rgba(0,0,0,0.7), inset 0 -2px 6px rgba(255,255,255,0.02); }
+    .divider{ width:2px; height:100%; background: linear-gradient(180deg, rgba(0,0,0,0.2), rgba(255,255,255,0.06)); border-radius:2px; margin:0 6px; align-self:stretch; }
+    .half{ flex:1; display:flex; align-items:center; justify-content:center; gap:6px; position:relative; }
+    .pip{ width:8px; height:8px; background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(255,255,255,0.6)), #0b1220; border-radius:50%; box-shadow: 0 2px 4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.2); }
+    .domino.dark .pip{ background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.06), rgba(255,255,255,0.02)), var(--accent-2); box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.02); }
+
+    .pips-0 .pip{ display:none; }
+    .pips-1 .pip:nth-child(1){ display:block; margin:0; }
+    .pips-2{ justify-content:space-between; }
+    .pips-3{ justify-content:space-between; }
+    .pips-4{ justify-content:space-between; flex-wrap:wrap; align-content:space-between; }
+    .pips-5{ justify-content:space-between; flex-wrap:wrap; align-content:space-between; }
+    .pips-6{ justify-content:space-between; flex-wrap:wrap; align-content:space-between; }
+
+    @media (max-width:640px){ .domino{ width:64px; height:36px; border-radius:8px; padding:4px; } .pip{ width:7px; height:7px; } }
+
+    .hand{ position:fixed; left:0; right:0; bottom:0; background: linear-gradient(180deg, rgba(2,6,12,0.6), rgba(2,6,12,0.85)); border-top:1px solid rgba(255,255,255,0.02); padding:12px 18px; display:flex; align-items:center; justify-content:center; gap:12px; z-index:40; }
+    .hand-inner{ display:flex; gap:10px; align-items:center; justify-content:center; max-width:100%; overflow:auto; padding:6px; }
+    .hand .domino{ cursor:pointer; transform-origin:center; }
+    .hand .domino:hover{ transform: translateY(-8px) scale(1.03); box-shadow: 0 18px 40px rgba(0,0,0,0.7); }
+    .hand .domino.playable{ outline: 2px solid rgba(126,249,255,0.12); box-shadow: 0 18px 40px rgba(0,0,0,0.7), 0 0 18px rgba(126,249,255,0.06); transform: translateY(-10px) scale(1.05); }
+
+    .boneyard{ position:absolute; top:12px; right:12px; display:flex; gap:8px; align-items:center; z-index:30; }
+    .bone-stack{ width:64px; height:44px; border-radius:8px; background: linear-gradient(180deg,#0b1220,#071018); border:1px solid rgba(255,255,255,0.03); box-shadow: 0 8px 20px rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; color:var(--muted); font-weight:700; font-size:13px; cursor:pointer; user-select:none; }
+
+    .placement-hint{ position:absolute; top:50%; transform:translateY(-50%); left:12px; display:flex; gap:8px; align-items:center; z-index:20; }
+    .hint-dot{ width:12px; height:12px; border-radius:50%; background: linear-gradient(180deg,var(--accent-2), #3ee7ff); box-shadow: 0 6px 18px rgba(62,231,255,0.12), 0 2px 6px rgba(0,0,0,0.6); opacity:0.0; transform:scale(0.6); transition: all .28s cubic-bezier(.2,.9,.3,1); }
+    .hint-dot.show{ opacity:1; transform:scale(1); }
+
+    .modal{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:80; background: linear-gradient(180deg, rgba(2,6,12,0.6), rgba(2,6,12,0.85)); backdrop-filter: blur(6px) saturate(120%); }
+    .modal-card{ background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:14px; padding:22px; width: min(720px, 92%); box-shadow: 0 30px 80px rgba(0,0,0,0.7); border:1px solid rgba(255,255,255,0.03); text-align:center; }
+    .modal-card h2{ color:var(--accent); margin-bottom:6px; font-size:22px; }
+    .modal-card p{ color:var(--muted); margin-bottom:12px; }
+
+    .confetti-canvas{ position:fixed; inset:0; pointer-events:none; z-index:90; display:none; }
+
+    .shuffle-anim{ animation: shuffle 700ms ease-in-out; }
+    @keyframes shuffle{ 0%{ transform: translateY(0) rotate(0deg); } 25%{ transform: translateY(-6px) rotate(-2deg); } 50%{ transform: translateY(0) rotate(2deg); } 75%{ transform: translateY(-4px) rotate(-1deg); } 100%{ transform: translateY(0) rotate(0deg); } }
+
+    .snap{ animation: snap .36s cubic-bezier(.2,.9,.3,1); }
+    @keyframes snap{ 0%{ transform: scale(0.6) rotate(-10deg); opacity:0; } 60%{ transform: scale(1.05) rotate(6deg); opacity:1; } 100%{ transform: scale(1) rotate(0deg); opacity:1; } }
+
+    .muted{ color:var(--muted); font-size:13px; }
+    .btn{ background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.04); padding:8px 12px; border-radius:10px; color:var(--tile); font-weight:700; cursor:pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
+    .btn.primary{ background: linear-gradient(180deg, rgba(255,209,102,0.12), rgba(255,209,102,0.06)); color: #0b1220; border: 1px solid rgba(255,209,102,0.18); box-shadow: 0 10px 30px rgba(255,209,102,0.06); }
+
+    .status{ position:absolute; left:18px; bottom:18px; color:var(--muted); font-size:13px; z-index:50; display:flex; gap:12px; align-items:center; }
+
+    .rot-0{ transform: rotate(0deg); }
+    .rot-90{ transform: rotate(90deg); }
+    .rot-180{ transform: rotate(180deg); }
+    .rot-270{ transform: rotate(270deg); }
+
+    /* Tooltip for first-move rule */
+    .hint-tooltip{
+      position: absolute;
+      bottom: 84px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10,14,20,0.9);
+      border: 1px solid rgba(255,255,255,0.04);
+      padding: 10px 14px;
+      border-radius: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      z-index: 60;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      opacity: 0;
+      transition: opacity .28s;
+      pointer-events: none;
+    }
+    .hint-tooltip.show{ opacity: 1; pointer-events: auto; }
+
+  </style>
+</head>
+<body>
+  <div id="app" class="app-wrap">
+    <div class="scoreboard" role="region" aria-label="Scoreboard">
+      <div class="score-pill">
+        <div class="score-card">
+          <h4>Player</h4>
+          <p id="player-score">0</p>
+          <div class="muted">vs 101</div>
+        </div>
+        <div class="score-card">
+          <h4>AI Opponent</h4>
+          <p id="ai-score">0</p>
+          <div class="muted">vs 101</div>
+        </div>
+      </div>
+
+      <div class="text-center">
+        <div class="muted">Round</div>
+        <div style="font-weight:800; font-size:18px" id="round-number">1</div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button id="reset-match" class="btn" title="Reset match">Reset Match</button>
+        <div class="muted text-right">
+          <div id="turn-indicator">—</div>
+          <div style="font-size:12px" id="status-text">Welcome to Dominoes</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="board-wrap mt-6" id="board-wrap">
+      <div class="placement-hint" id="placement-hint">
+        <div class="hint-dot" id="hint-left"></div>
+        <div class="hint-dot" id="hint-right"></div>
+      </div>
+
+      <div class="boneyard" id="boneyard">
+        <div class="bone-stack" id="bone-stack" title="Boneyard — draw a tile">Boneyard</div>
+        <div class="muted" id="boneyard-count">28</div>
+      </div>
+
+      <div class="train" id="train" aria-live="polite" aria-atomic="true"></div>
+
+      <div class="status" id="status-bar">
+        <div id="last-play" class="muted">No plays yet</div>
+      </div>
+
+      <!-- Tooltip for first-move rule -->
+      <div id="first-move-tooltip" class="hint-tooltip" aria-hidden="true"></div>
+    </div>
+
+    <div class="hand" id="player-hand-area" aria-label="Player hand">
+      <div class="hand-inner" id="player-hand"></div>
+    </div>
+
+    <div id="modal-root" style="display:none;"></div>
+    <canvas id="confetti" class="confetti-canvas" width="1920" height="1080"></canvas>
+  </div>
+
+  <script>
+    (function(){
+      const $ = (s,r=document)=> r.querySelector(s);
+      const $$ = (s,r=document)=> Array.from(r.querySelectorAll(s));
+      const trainEl = $('#train');
+      const playerHandEl = $('#player-hand');
+      const boneStackEl = $('#bone-stack');
+      const boneyardCountEl = $('#boneyard-count');
+      const roundNumberEl = $('#round-number');
+      const playerScoreEl = $('#player-score');
+      const aiScoreEl = $('#ai-score');
+      const resetMatchBtn = $('#reset-match');
+      const modalRoot = $('#modal-root');
+      const turnIndicator = $('#turn-indicator');
+      const statusText = $('#status-text');
+      const lastPlay = $('#last-play');
+      const placementHintLeft = $('#hint-left');
+      const placementHintRight = $('#hint-right');
+      const boardWrap = $('#board-wrap');
+      const firstMoveTooltip = $('#first-move-tooltip');
+      const confettiCanvas = $('#confetti');
+
+      const TARGET_SCORE = 101;
+      const PLAYER = 'player';
+      const AI = 'ai';
+
+      let deck = [];
+      let boneyard = [];
+      let hands = { player: [], ai: [] };
+      let train = [];
+      let currentTurn = null;
+      let round = 1;
+      let scores = { player:0, ai:0 };
+      let roundStarter = null;
+      let roundWinner = null;
+      let animLock = false;
+
+      // New state for first-move highest double rule
+      let highestDoubleTile = null; // {a,b,id}
+      let highestDoubleOwner = null; // 'player' or 'ai' or null
+      let roundFirstMove = true;
+
+      function buildDeck(){
+        const arr=[];
+        for(let i=0;i<=6;i++){
+          for(let j=i;j<=6;j++){
+            arr.push({a:i,b:j,id:`${i}-${j}`});
+          }
+        }
+        return arr;
+      }
+      function shuffle(arr){
+        for(let i=arr.length-1;i>0;i--){
+          const j = Math.floor(Math.random()*(i+1));
+          [arr[i],arr[j]]=[arr[j],arr[i]];
+        }
+        return arr;
+      }
+
+      function deal(){
+        hands.player=[]; hands.ai=[];
+        for(let i=0;i<7;i++){
+          hands.player.push(boneyard.pop());
+          hands.ai.push(boneyard.pop());
+        }
+      }
+
+      function determineStarter(){
+        const all = [...hands.player.map(t=>({...t,owner:PLAYER})), ...hands.ai.map(t=>({...t,owner:AI}))];
+        const doubles = all.filter(t=>t.a===t.b);
+        if(doubles.length){
+          doubles.sort((x,y)=> (y.a - x.a));
+          return doubles[0].owner;
+        }
+        all.sort((x,y)=> ((y.a+y.b) - (x.a+x.b)));
+        return all[0].owner;
+      }
+
+      function findHighestDouble(){
+        const all = [...hands.player.map(t=>({...t,owner:PLAYER})), ...hands.ai.map(t=>({...t,owner:AI}))];
+        const doubles = all.filter(t=>t.a===t.b);
+        if(doubles.length===0) { highestDoubleTile = null; highestDoubleOwner = null; return; }
+        doubles.sort((x,y)=> (y.a - x.a));
+        highestDoubleTile = {a:doubles[0].a, b:doubles[0].b, id:doubles[0].id};
+        highestDoubleOwner = doubles[0].owner;
+      }
+
+      function renderTrain(){
+        trainEl.innerHTML='';
+        train.forEach((tile, idx)=>{
+          const el = createTileElement(tile, false);
+          el.classList.add('snap');
+          el.style.transitionDelay = (idx*20)+'ms';
+          trainEl.appendChild(el);
+        });
+      }
+
+      function renderHand(){
+        playerHandEl.innerHTML='';
+        hands.player.forEach((tile, idx)=>{
+          const el = createTileElement(tile, true);
+          el.tabIndex = 0;
+          el.dataset.index = idx;
+          if(isTilePlayable(tile, PLAYER)) el.classList.add('playable');
+          playerHandEl.appendChild(el);
+        });
+      }
+
+      function createTileElement(tile, isHand=false){
+        const wrapper = document.createElement('div');
+        wrapper.className = 'domino dark';
+        wrapper.setAttribute('role','button');
+        wrapper.setAttribute('aria-label', `Tile ${tile.a} and ${tile.b}`);
+        if(tile.rot) wrapper.classList.add(`rot-${tile.rot}`); else wrapper.classList.add('rot-0');
+
+        const left = document.createElement('div'); left.className = 'half pips-'+tile.a;
+        for(let i=0;i<getPipCount(tile.a);i++){ const p=document.createElement('div'); p.className='pip'; left.appendChild(p); }
+        const div = document.createElement('div'); div.className='divider';
+        const right = document.createElement('div'); right.className = 'half pips-'+tile.b;
+        for(let i=0;i<getPipCount(tile.b);i++){ const p=document.createElement('div'); p.className='pip'; right.appendChild(p); }
+
+        wrapper.appendChild(left); wrapper.appendChild(div); wrapper.appendChild(right);
+        wrapper.style.transform = `perspective(600px) rotateX(2deg) rotateY(-1deg)`;
+
+        if(isHand){
+          wrapper.addEventListener('mouseenter', ()=> wrapper.classList.add('shuffle-anim'));
+          wrapper.addEventListener('mouseleave', ()=> wrapper.classList.remove('shuffle-anim'));
+          wrapper.addEventListener('click', onPlayerTileClick);
+          wrapper.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); onPlayerTileClick.call(wrapper,e); }});
+        }
+        return wrapper;
+      }
+
+      function getPipCount(n){ return n===0 ? 1 : n; }
+
+      // Updated isTilePlayable to enforce first-move highest double rule
+      function isTilePlayable(tile, who){
+        // If train empty and it's the first move of the round and highestDouble exists and owner is the starter:
+        if(train.length === 0 && roundFirstMove && highestDoubleTile){
+          // If the current mover is the owner of highest double, they may only play that double
+          if(highestDoubleOwner === who){
+            return tile.id === highestDoubleTile.id;
+          } else {
+            // other player cannot play until owner plays highest double
+            return false;
+          }
+        }
+
+        if(train.length === 0) return true;
+        const leftEnd = train[0].a;
+        const rightEnd = train[train.length-1].b;
+        return tile.a === leftEnd || tile.b === leftEnd || tile.a === rightEnd || tile.b === rightEnd;
+      }
+
+      function getPlayableTiles(hand){
+        return hand.filter(t => isTilePlayable(t, hand === hands.player ? PLAYER : AI));
+      }
+
+      function onPlayerTileClick(e){
+        if(animLock) return;
+        if(currentTurn !== PLAYER) return;
+        const idx = parseInt(this.dataset.index,10);
+        const tile = hands.player[idx];
+        if(!isTilePlayable(tile, PLAYER)){
+          // If it's first move and player must play highest double, show tooltip
+          if(train.length===0 && roundFirstMove && highestDoubleTile && highestDoubleOwner === PLAYER){
+            showHintTooltip(`يجب عليك البدء بأعلى دبل لديك: ${highestDoubleTile.a}-${highestDoubleTile.b}`);
+            return;
+          }
+          flashStatus('Tile not playable. Draw from boneyard if needed.');
+          return;
+        }
+        showPlacementHints(tile);
+        placePlayerTile(idx);
+      }
+
+      function showPlacementHints(tile){
+        placementHintLeft.classList.remove('show');
+        placementHintRight.classList.remove('show');
+        if(train.length === 0){
+          placementHintLeft.classList.add('show');
+          placementHintRight.classList.add('show');
+          return;
+        }
+        const leftEnd = train[0].a;
+        const rightEnd = train[train.length-1].b;
+        if(tile.a === leftEnd || tile.b === leftEnd) placementHintLeft.classList.add('show');
+        if(tile.a === rightEnd || tile.b === rightEnd) placementHintRight.classList.add('show');
+      }
+
+      function placePlayerTile(handIndex){
+        const tile = hands.player[handIndex];
+        if(!isTilePlayable(tile, PLAYER)) return;
+        let side = null;
+        if(train.length === 0) side = 'right';
+        else {
+          const leftEnd = train[0].a;
+          const rightEnd = train[train.length-1].b;
+          const canLeft = (tile.a === leftEnd || tile.b === leftEnd);
+          const canRight = (tile.a === rightEnd || tile.b === rightEnd);
+          if(canRight && !canLeft) side = 'right';
+          else if(canLeft && !canRight) side = 'left';
+          else side = 'right';
+        }
+        performPlace(tile, handIndex, PLAYER, side);
+      }
+
+      function performPlace(tile, handIndex, who, side){
+        animLock = true;
+        if(who === PLAYER) hands.player.splice(handIndex,1);
+        else {
+          const idx = hands.ai.findIndex(t=>t.id===tile.id);
+          if(idx>=0) hands.ai.splice(idx,1);
+        }
+
+        let placed = {...tile};
+        placed.rot = (side === 'left') ? 270 : 90;
+
+        if(side === 'left'){
+          const leftEnd = train.length ? train[0].a : null;
+          if(train.length && placed.b !== leftEnd) [placed.a,placed.b] = [placed.b,placed.a];
+          train.unshift(placed);
+        } else {
+          const rightEnd = train.length ? train[train.length-1].b : null;
+          if(train.length && placed.a !== rightEnd) [placed.a,placed.b] = [placed.b,placed.a];
+          train.push(placed);
+        }
+
+        // After first placement, mark that first move has occurred
+        if(roundFirstMove) roundFirstMove = false;
+
+        renderTrain();
+        renderHand();
+        updateBoneyardCount();
+        lastPlay.textContent = `${who === PLAYER ? 'Player' : 'AI'} played ${tile.a}-${tile.b}`;
+        showPlacementHints({a:-1,b:-1});
+
+        // Scroll train to show the new tile after animation completes
+        setTimeout(()=> {
+          scrollTrainToEnd(side);
+        }, 360); // sync with .snap animation
+
+        setTimeout(()=>{
+          animLock = false;
+          checkRoundEnd(who);
+          if(!isRoundOver()){
+            currentTurn = (who === PLAYER) ? AI : PLAYER;
+            updateTurnIndicator();
+            if(currentTurn === AI) setTimeout(aiTurn, 600);
+          }
+        }, 420);
+      }
+
+      function aiTurn(){
+        if(animLock) return;
+        // If train empty and it's first move and AI owns highest double, force play it
+        if(train.length === 0 && roundFirstMove && highestDoubleTile && highestDoubleOwner === AI){
+          const idx = hands.ai.findIndex(t=>t.id===highestDoubleTile.id);
+          if(idx>=0){
+            // play that double
+            const chosen = hands.ai[idx];
+            performPlace(chosen, null, AI, 'right');
+            return;
+          }
+        }
+
+        const playable = getPlayableTiles(hands.ai);
+        if(playable.length === 0){
+          if(boneyard.length > 0){
+            drawFromBoneyard(AI);
+            setTimeout(aiTurn, 450);
+            return;
+          } else {
+            currentTurn = PLAYER;
+            updateTurnIndicator();
+            flashStatus('AI passes — no playable tiles');
+            return;
+          }
+        }
+
+        playable.sort((x,y)=>{
+          const xScore = (x.a===x.b?100:0) + (x.a+x.b);
+          const yScore = (y.a===y.b?100:0) + (y.a+y.b);
+          return yScore - xScore;
+        });
+
+        const chosen = playable[0];
+        let side = 'right';
+        if(train.length === 0) side = 'right';
+        else {
+          const leftEnd = train[0].a;
+          const rightEnd = train[train.length-1].b;
+          const canLeft = (chosen.a === leftEnd || chosen.b === leftEnd);
+          const canRight = (chosen.a === rightEnd || chosen.b === rightEnd);
+          if(canRight && !canLeft) side = 'right';
+          else if(canLeft && !canRight) side = 'left';
+          else side = 'right';
+        }
+
+        performPlace(chosen, null, AI, side);
+      }
+
+      function drawFromBoneyard(who){
+        if(boneyard.length === 0) return null;
+        const tile = boneyard.pop();
+        if(who === PLAYER){ hands.player.push(tile); renderHand(); }
+        else hands.ai.push(tile);
+        updateBoneyardCount();
+        flashStatus(`${who === PLAYER ? 'You' : 'AI'} drew a tile`);
+        return tile;
+      }
+
+      function updateBoneyardCount(){ boneyardCountEl.textContent = boneyard.length; }
+
+      function checkRoundEnd(lastMover){
+        if(hands.player.length === 0 || hands.ai.length === 0){
+          const winner = hands.player.length === 0 ? PLAYER : AI;
+          roundWinner = winner;
+          const loser = winner === PLAYER ? AI : PLAYER;
+          const points = sumPips(hands[loser]);
+          scores[winner] += points;
+          showRoundModal(winner, points, `${winner === PLAYER ? 'You' : 'AI'} emptied hand`);
+          return;
+        }
+
+        const playerPlayable = getPlayableTiles(hands.player).length > 0;
+        const aiPlayable = getPlayableTiles(hands.ai).length > 0;
+        if(!playerPlayable && !aiPlayable && boneyard.length === 0){
+          const playerPips = sumPips(hands.player);
+          const aiPips = sumPips(hands.ai);
+          let winner, points;
+          if(playerPips < aiPips){ winner = PLAYER; points = aiPips - playerPips; }
+          else if(aiPips < playerPips){ winner = AI; points = playerPips - aiPips; }
+          else { winner = null; points = 0; }
+          if(winner){ scores[winner] += points; roundWinner = winner; showRoundModal(winner, points, `Blocked game — ${winner === PLAYER ? 'You' : 'AI'} had lower pips`); }
+          else { roundWinner = null; showRoundModal(null, 0, 'Blocked game — tie, no points awarded'); }
+          return;
+        }
+      }
+
+      function sumPips(hand){ return hand.reduce((s,t)=> s + t.a + t.b, 0); }
+
+      function showRoundModal(winner, points, message){
+        animLock = true;
+        modalRoot.innerHTML = '';
+        const modal = document.createElement('div'); modal.className='modal';
+        modal.innerHTML = `
+          <div class="modal-card">
+            <h2>${winner ? (winner===PLAYER ? 'Round Winner — You' : 'Round Winner — AI') : 'Round Result'}</h2>
+            <p class="muted">${message}</p>
+            <div style="font-size:18px; font-weight:800; margin:8px 0;">
+              ${points>0 ? `Points gained: <span style="color:var(--accent)">${points}</span>` : '<span class="muted">No points awarded</span>'}
+            </div>
+            <div style="display:flex; gap:12px; justify-content:center; margin-top:12px;">
+              <button id="next-round" class="btn primary">Next Round</button>
+              <button id="view-board" class="btn">View Board</button>
+            </div>
+            <div style="margin-top:12px; color:var(--muted); font-size:13px;">
+              Match Score — You: <strong>${scores.player}</strong> • AI: <strong>${scores.ai}</strong>
+            </div>
+          </div>
+        `;
+        modalRoot.appendChild(modal); modalRoot.style.display='block';
+
+        if(scores.player >= TARGET_SCORE || scores.ai >= TARGET_SCORE){
+          setTimeout(()=> showMatchVictory(scores.player >= TARGET_SCORE ? PLAYER : AI), 700);
+        }
+
+        $('#next-round').addEventListener('click', ()=>{
+          modalRoot.style.display='none'; modalRoot.innerHTML=''; animLock=false;
+          round++; roundStarter = winner || roundStarter || PLAYER;
+          startRound(false, winner);
+        });
+        $('#view-board').addEventListener('click', ()=>{
+          modalRoot.style.display='none'; modalRoot.innerHTML=''; animLock=false;
+        });
+        updateScoreboard();
+      }
+
+      function isRoundOver(){
+        return (hands.player.length === 0 || hands.ai.length === 0 || (!getPlayableTiles(hands.player).length && !getPlayableTiles(hands.ai).length && boneyard.length === 0));
+      }
+
+      function startRound(isInitial=false, prevWinner=null){
+        deck = buildDeck(); shuffle(deck); boneyard = [...deck]; train = []; hands.player=[]; hands.ai=[];
+        deal(); updateBoneyardCount();
+        findHighestDouble(); // compute highest double for this round
+        roundFirstMove = true;
+
+        if(isInitial) roundStarter = determineStarter();
+        else { if(prevWinner) roundStarter = prevWinner; }
+
+        currentTurn = roundStarter;
+        updateTurnIndicator();
+        renderTrain(); renderHand();
+        updateScoreboard();
+        lastPlay.textContent = 'New round started';
+
+        // If starter owns highest double and is player, show tooltip
+        if(roundFirstMove && highestDoubleTile && highestDoubleOwner === PLAYER && currentTurn === PLAYER){
+          showHintTooltip(`يجب عليك البدء بأعلى دبل لديك: ${highestDoubleTile.a}-${highestDoubleTile.b}`);
+        }
+
+        if(currentTurn === AI){
+          setTimeout(aiTurn, 700);
+        }
+      }
+
+      function updateTurnIndicator(){ turnIndicator.textContent = currentTurn === PLAYER ? 'Your turn' : 'AI turn'; statusText.textContent = `Round ${round} • ${currentTurn === PLAYER ? 'Make a move' : 'AI is thinking'}`; }
+
+      function flashStatus(msg){ statusText.textContent = msg; setTimeout(()=> { statusText.textContent = `${currentTurn === PLAYER ? 'Your turn' : 'AI turn'}`; }, 1600); }
+
+      resetMatchBtn.addEventListener('click', ()=>{ if(confirm('Reset match and scores?')) initMatch(); });
+
+      boneStackEl.addEventListener('click', ()=>{
+        if(animLock) return;
+        if(currentTurn !== PLAYER) return;
+        if(boneyard.length === 0){ flashStatus('Boneyard empty'); return; }
+        drawFromBoneyard(PLAYER);
+        setTimeout(()=>{
+          const playable = getPlayableTiles(hands.player);
+          if(playable.length === 0){
+            if(boneyard.length === 0){ currentTurn = AI; updateTurnIndicator(); setTimeout(aiTurn, 600); }
+            else flashStatus('No playable tiles — draw again or pass');
+          } else flashStatus('You drew a playable tile');
+        }, 200);
+      });
+
+      function showMatchVictory(winner){
+        startConfetti();
+        modalRoot.innerHTML=''; const modal=document.createElement('div'); modal.className='modal';
+        modal.innerHTML = `
+          <div class="modal-card">
+            <h2>${winner===PLAYER ? 'Champion — You!' : 'Champion — AI'}</h2>
+            <p class="muted">Match finished — final score</p>
+            <div style="font-size:20px; font-weight:900; margin:8px 0; color:var(--accent);">
+              You: ${scores.player} • AI: ${scores.ai}
+            </div>
+            <div style="display:flex; gap:12px; justify-content:center; margin-top:12px;">
+              <button id="play-again" class="btn primary">Play Again</button>
+              <button id="close-match" class="btn">Close</button>
+            </div>
+          </div>
+        `;
+        modalRoot.appendChild(modal); modalRoot.style.display='block';
+        $('#play-again').addEventListener('click', ()=>{ stopConfetti(); modalRoot.style.display='none'; modalRoot.innerHTML=''; initMatch(); });
+        $('#close-match').addEventListener('click', ()=>{ stopConfetti(); modalRoot.style.display='none'; modalRoot.innerHTML=''; });
+      }
+
+      // Confetti (same as before)
+      let confettiCtx=null, confettiPieces=[], confettiAnim=null;
+      function startConfetti(){
+        confettiCanvas.style.display='block';
+        confettiCanvas.width = window.innerWidth; confettiCanvas.height = window.innerHeight;
+        confettiCtx = confettiCanvas.getContext('2d'); confettiPieces=[];
+        const colors = ['#ffd166','#7ef9ff','#ff7ab6','#9bffb8','#ffd1a9'];
+        for(let i=0;i<120;i++){
+          confettiPieces.push({ x: Math.random()*confettiCanvas.width, y: Math.random()*confettiCanvas.height - confettiCanvas.height, w: 6 + Math.random()*10, h: 6 + Math.random()*10, vx: -2 + Math.random()*4, vy: 2 + Math.random()*6, r: Math.random()*360, vr: -6 + Math.random()*12, color: colors[Math.floor(Math.random()*colors.length)], opacity: 0.8 + Math.random()*0.2 });
+        }
+        (function loop(){ confettiCtx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); confettiPieces.forEach(p=>{ p.x += p.vx; p.y += p.vy; p.r += p.vr; confettiCtx.save(); confettiCtx.translate(p.x,p.y); confettiCtx.rotate(p.r * Math.PI/180); confettiCtx.fillStyle = p.color; confettiCtx.globalAlpha = p.opacity; confettiCtx.fillRect(-p.w/2, -p.h/2, p.w, p.h); confettiCtx.restore(); if(p.y > confettiCanvas.height + 40){ p.y = -40; p.x = Math.random()*confettiCanvas.width; } }); confettiAnim = requestAnimationFrame(loop); })();
+        setTimeout(stopConfetti, 6000);
+      }
+      function stopConfetti(){ if(confettiAnim) cancelAnimationFrame(confettiAnim); confettiCanvas.style.display='none'; }
+
+      // Scroll train to show new tile
+      function scrollTrainToEnd(side){
+        // boardWrap contains train; we want to scroll train horizontally to show the new tile
+        // If placed on right -> scroll to max scrollLeft; if left -> scroll to 0
+        try{
+          const container = trainEl; // trainEl has overflow-x:auto
+          if(side === 'right'){
+            container.scrollTo({ left: container.scrollWidth, behavior: 'smooth' });
+          } else {
+            container.scrollTo({ left: 0, behavior: 'smooth' });
+          }
+        }catch(e){ /* ignore */ }
+      }
+
+      // Tooltip for first-move rule
+      let tooltipTimer = null;
+      function showHintTooltip(msg, duration=3000){
+        firstMoveTooltip.textContent = msg;
+        firstMoveTooltip.classList.add('show');
+        firstMoveTooltip.setAttribute('aria-hidden','false');
+        if(tooltipTimer) clearTimeout(tooltipTimer);
+        tooltipTimer = setTimeout(()=>{ firstMoveTooltip.classList.remove('show'); firstMoveTooltip.setAttribute('aria-hidden','true'); }, duration);
+      }
+
+      // Observer to update playable highlights and auto-pass
+      const observer = new MutationObserver(()=> {
+        $$('.hand .domino').forEach(el=>{
+          const idx = parseInt(el.dataset.index,10);
+          const tile = hands.player[idx];
+          if(tile && isTilePlayable(tile, PLAYER)) el.classList.add('playable'); else el.classList.remove('playable');
+        });
+        if(currentTurn === PLAYER && !animLock){
+          const playable = getPlayableTiles(hands.player);
+          if(playable.length === 0 && boneyard.length === 0){
+            flashStatus('No playable tiles — passing to AI');
+            currentTurn = AI; updateTurnIndicator(); setTimeout(aiTurn, 600);
+          }
+        }
+      });
+      observer.observe(playerHandEl, { childList:true, subtree:true });
+
+      // Keyboard draw shortcut
+      window.addEventListener('keydown', (e)=>{ if(e.key==='d' || e.key==='D'){ if(currentTurn===PLAYER && !animLock) drawFromBoneyard(PLAYER); } });
+
+      function updateScoreboard(){ playerScoreEl.textContent = scores.player; aiScoreEl.textContent = scores.ai; roundNumberEl.textContent = round; }
+
+      function flashLastPlay(msg){ lastPlay.textContent = msg; setTimeout(()=> lastPlay.textContent = '—', 2200); }
+
+      // Initialize match
+      function initMatch(){
+        scores = { player:0, ai:0 }; round = 1; roundStarter = null; roundWinner = null; updateScoreboard(); startRound(true);
+      }
+
+      // Start
+      initMatch();
+
+      // Expose debug
+      window.__dominoes = { getState: ()=> ({ round, scores, hands, boneyard, train, currentTurn, highestDoubleTile, highestDoubleOwner }), restart: initMatch };
+
+      // Resize confetti canvas
+      window.addEventListener('resize', ()=>{ if(confettiCanvas.style.display !== 'none'){ confettiCanvas.width = window.innerWidth; confettiCanvas.height = window.innerHeight; } });
+
+    })();
+  </script>
+</body>
+  </html>

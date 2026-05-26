@@ -1,18 +1,13 @@
+// js/ai.js
 const STORAGE_PREFIX = 'dominoes_ai_wardati_';
 const DEFAULT_MODEL_NAME = 'wardati_v1';
 const MAX_PIP = 6;
+let MODEL_NAME = DEFAULT_MODEL_NAME;
+let model = null;
+let replayBuffer = [];
 
-function cloneState(state) {
-  return {
-    train: state.train.map(t => ({ a: t.a, b: t.b, id: t.id })),
-    hands: {
-      player: state.hands.player.map(t => ({ a: t.a, b: t.b, id: t.id })),
-      ai: state.hands.ai.map(t => ({ a: t.a, b: t.b, id: t.id }))
-    },
-    boneyardCount: state.boneyard ? state.boneyard.length : (state.boneyardCount ?? 0),
-    scores: { ...state.scores },
-    round: state.round
-  };
+function storageKey(name) {
+  return STORAGE_PREFIX + name;
 }
 
 function defaultModel() {
@@ -27,19 +22,8 @@ function defaultModel() {
   return {
     tileWeights,
     endPreference,
-    meta: {
-      gamesPlayed: 0,
-      roundsSeen: 0,
-      lastUpdated: Date.now()
-    }
+    meta: { gamesPlayed: 0, roundsSeen: 0, lastUpdated: Date.now() }
   };
-}
-
-let MODEL_NAME = DEFAULT_MODEL_NAME;
-let model = null;
-
-function storageKey(name) {
-  return STORAGE_PREFIX + name;
 }
 
 function saveModel() {
@@ -48,7 +32,7 @@ function saveModel() {
     localStorage.setItem(key, JSON.stringify(model));
     model.meta.lastUpdated = Date.now();
   } catch (e) {
-    console.warn('وردتي: failed to save model', e);
+    console.warn('Wardati: failed to save model', e);
   }
 }
 
@@ -61,7 +45,7 @@ function loadModel(name) {
     if (parsed && parsed.tileWeights && parsed.endPreference) return parsed;
     return null;
   } catch (e) {
-    console.warn('وردتي: failed to load model', e);
+    console.warn('Wardati: failed to load model', e);
     return null;
   }
 }
@@ -69,16 +53,47 @@ function loadModel(name) {
 export function init(modelName = DEFAULT_MODEL_NAME) {
   MODEL_NAME = modelName || DEFAULT_MODEL_NAME;
   const loaded = loadModel(MODEL_NAME);
-  if (loaded) {
-    model = loaded;
-  } else {
+  if (loaded) model = loaded;
+  else {
     model = defaultModel();
     saveModel();
   }
-  return model;
+  return getModelSnapshot();
+}
+
+export function getModelSnapshot() {
+  if (!model) init();
+  return JSON.parse(JSON.stringify(model));
+}
+
+export function resetModel(name = MODEL_NAME) {
+  MODEL_NAME = name || DEFAULT_MODEL_NAME;
+  model = defaultModel();
+  saveModel();
+  replayBuffer = [];
+  return getModelSnapshot();
+}
+
+export function importModel(json) {
+  try {
+    if (json && json.tileWeights && json.endPreference) {
+      model = json;
+      saveModel();
+      return true;
+    }
+    return false;
+  } catch (e) {
+    return false;
+  }
+}
+
+export function exportModel() {
+  if (!model) init();
+  return JSON.parse(JSON.stringify(model));
 }
 
 export function playableTiles(hand, train) {
+  if (!Array.isArray(hand)) return [];
   if (!train || train.length === 0) return hand.slice();
   const left = train[0].a;
   const right = train[train.length - 1].b;
@@ -95,13 +110,20 @@ export function chooseSide(tile, train, playerHand = []) {
   if (canRight && !canLeft) return 'right';
   const leftEndAfter = (tile.a === left) ? tile.b : tile.a;
   const rightEndAfter = (tile.a === right) ? tile.b : tile.a;
-  const leftScore = model.endPreference[leftEndAfter] || 1.0;
-  const rightScore = model.endPreference[rightEndAfter] || 1.0;
+  const leftScore = (model && model.endPreference[leftEndAfter]) || 1.0;
+  const rightScore = (model && model.endPreference[rightEndAfter]) || 1.0;
   return leftScore <= rightScore ? 'left' : 'right';
+}
+
+function heuristicScore(tile) {
+  let s = tile.a + tile.b;
+  if (tile.a === tile.b) s += 50;
+  return s;
 }
 
 export function chooseMove(state, mode = 'hard') {
   if (!model) init();
+  if (!state || !state.hands || !Array.isArray(state.hands.ai)) return null;
   const aiHand = state.hands.ai;
   const train = state.train || [];
   const playable = playableTiles(aiHand, train);
@@ -109,16 +131,11 @@ export function chooseMove(state, mode = 'hard') {
   if (mode === 'easy') {
     const idx = Math.floor(Math.random() * playable.length);
     const tile = playable[idx];
-    const side = chooseSide(tile, train, state.hands.player);
+    const side = chooseSide(tile, train, state.hands.player || []);
     return { tile, side };
   }
   const alpha = 0.7;
   const beta = 0.3;
-  function heuristicScore(tile) {
-    let s = tile.a + tile.b;
-    if (tile.a === tile.b) s += 50;
-    return s;
-  }
   let best = null;
   let bestScore = -Infinity;
   for (const tile of playable) {
@@ -137,18 +154,18 @@ export function chooseMove(state, mode = 'hard') {
     return (bestScore - combined) < 6;
   });
   const chosen = close[Math.floor(Math.random() * close.length)];
-  const side = chooseSide(chosen, train, state.hands.player);
+  const side = chooseSide(chosen, train, state.hands.player || []);
   return { tile: chosen, side };
 }
 
 export function learnFromRound(summary) {
   if (!model) init();
-  if (!summary || !summary.moves) return;
+  if (!summary || !Array.isArray(summary.moves)) return;
   model.meta.roundsSeen = (model.meta.roundsSeen || 0) + 1;
+  model.meta.gamesPlayed = (model.meta.gamesPlayed || 0);
   let reward = 0;
   if (summary.winner === 'ai') reward = 1;
   else if (summary.winner === 'player') reward = -1;
-  else reward = 0;
   const lrPositive = 0.12;
   const lrNegative = 0.06;
   const lrNeutral = 0.02;
@@ -173,48 +190,58 @@ export function learnFromRound(summary) {
     model.endPreference[leftEnd] = Math.max(0.1, (model.endPreference[leftEnd] || 1.0) + delta);
     model.endPreference[rightEnd] = Math.max(0.1, (model.endPreference[rightEnd] || 1.0) + delta);
   }
+
+  if (reward < 0 && aiMoves.length) {
+    const critical = aiMoves.slice(-3);
+    for (const mv of critical) {
+      const id = mv.tileId;
+      model.tileWeights[id] = Math.max(0.1, model.tileWeights[id] - lrNegative * 2);
+    }
+  }
+
   for (const k in model.tileWeights) {
     model.tileWeights[k] = Math.max(0.1, Math.min(10, model.tileWeights[k]));
   }
   for (let i = 0; i < model.endPreference.length; i++) {
     model.endPreference[i] = Math.max(0.1, Math.min(10, model.endPreference[i]));
   }
+
+  pushExperience({
+    state: summary.finalState || null,
+    moves: summary.moves.slice(),
+    reward,
+    timestamp: Date.now()
+  });
+
   model.meta.lastUpdated = Date.now();
   saveModel();
 }
 
-export function exportModel() {
-  if (!model) init();
-  return JSON.parse(JSON.stringify(model));
+function pushExperience(exp) {
+  replayBuffer.push(exp);
+  if (replayBuffer.length > 2000) replayBuffer.shift();
 }
 
-export function importModel(json) {
-  try {
-    if (json && json.tileWeights && json.endPreference) {
-      model = json;
-      saveModel();
-      return true;
+export function replayTrain(batchSize = 32) {
+  if (!model) init();
+  const n = Math.min(batchSize, replayBuffer.length);
+  if (n === 0) return;
+  for (let i = 0; i < n; i++) {
+    const e = replayBuffer[Math.floor(Math.random() * replayBuffer.length)];
+    if (!e || !e.moves) continue;
+    const aiMoves = e.moves.filter(m => m.who === 'ai');
+    for (const mv of aiMoves) {
+      const id = mv.tileId;
+      if (!model.tileWeights[id]) model.tileWeights[id] = 1.0;
+      model.tileWeights[id] += (e.reward * 0.02) * (1 + Math.random() * 0.02);
+      model.tileWeights[id] = Math.max(0.1, Math.min(10, model.tileWeights[id]));
     }
-    return false;
-  } catch (e) {
-    return false;
   }
-}
-
-export function resetModel(name = MODEL_NAME) {
-  MODEL_NAME = name || DEFAULT_MODEL_NAME;
-  model = defaultModel();
   saveModel();
-  return model;
-}
-
-export function getModelSnapshot() {
-  if (!model) init();
-  return JSON.parse(JSON.stringify(model));
 }
 
 try {
   if (!model) init(DEFAULT_MODEL_NAME);
 } catch (e) {
   model = defaultModel();
-}
+                     }

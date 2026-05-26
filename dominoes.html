@@ -1,713 +1,1313 @@
-Enter<!doctype html>
+<!doctype html>
 <html lang="ar">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Dominoes — Classic Draw (Luxury Dark) — Updated</title>
+  <title>Dominoes — Professional Web Edition</title>
 
-  <!-- Tailwind via CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind optional helper (keeps utilities available) -->
+  <script src="https://cdn.tailwindcss.com" defer></script>
 
+  <!-- ============================================================
+       Phase: Full Production-ready Single-file App
+       - Modular JS (ES6+ classes & IIFE modules)
+       - Clear separation: CSS (presentation) vs JS (logic)
+       - State machine for game flow
+       - Dual-mode AI (Easy / Hard)
+       - Performance-minded animations (transform/opacity)
+       - Accessibility & responsive layout
+       ============================================================ -->
   <style>
+    /* ===========================
+       Design Tokens / Variables
+       =========================== */
     :root{
-      --bg:#0b0f14;
-      --panel:#0f1720;
-      --muted:#9aa4b2;
-      --accent:#ffd166;
-      --accent-2:#7ef9ff;
-      --tile:#e9eef6;
-      --shadow: rgba(0,0,0,0.6);
+      /* Colors */
+      --bg-900: #071018;
+      --bg-800: #0b1220;
+      --glass: rgba(255,255,255,0.06);
+      --glass-2: rgba(255,255,255,0.03);
+      --accent-gold: #ffd166;
+      --accent-cyan: #7ef9ff;
+      --muted: #9aa4b2;
+      --tile-light: #e6eef6;
+      --danger: #ff6b6b;
+
+      /* Spacing */
+      --space-xs: 6px;
+      --space-sm: 12px;
+      --space-md: 18px;
+      --space-lg: 28px;
+
+      /* Motion */
+      --fast: 160ms;
+      --medium: 360ms;
+      --slow: 600ms;
+      --easing: cubic-bezier(.2,.9,.3,1);
+
+      /* Radii & elevation */
+      --radius-lg: 14px;
+      --radius-md: 10px;
+      --elevation-1: 0 10px 40px rgba(0,0,0,0.6);
     }
-    html,body,#app{ height:100%; background: linear-gradient(180deg,var(--bg), #071018 120%); color:#e6eef6; font-family:Inter,system-ui,Arial; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
 
-    .app-wrap{ max-width:1200px; margin:24px auto; padding:20px; }
+    /* ===========================
+       Global Reset & Base
+       =========================== */
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; margin:0; font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; background:
+      radial-gradient(900px 400px at 10% 10%, rgba(14,18,24,0.6), transparent),
+      linear-gradient(180deg,var(--bg-900), #041018 140%); color:var(--tile-light); }
+    a{ color:inherit; text-decoration:none; }
 
-    .scoreboard{ background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:14px; padding:14px; display:flex; gap:12px; align-items:center; justify-content:space-between; border:1px solid rgba(255,255,255,0.03); box-shadow: 0 6px 30px rgba(2,6,12,0.6); }
+    /* ===========================
+       App container
+       =========================== */
+    .app {
+      max-width:1200px;
+      margin:28px auto;
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
 
-    .score-card{ background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00)); border-radius:10px; padding:10px 14px; min-width:160px; text-align:center; box-shadow: 0 8px 20px rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.02); }
-    .score-card h4{ font-weight:700; color:var(--accent); margin:0; font-size:13px; }
-    .score-card p{ margin:0; font-weight:700; font-size:20px; color:#e6eef6; }
+    /* ===========================
+       Glass panels (header, board, footer)
+       =========================== */
+    .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--glass-2);
+      box-shadow: var(--elevation-1);
+      backdrop-filter: blur(8px) saturate(120%);
+      padding:12px;
+    }
 
-    .board-wrap{ margin-top:18px; background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00)); border-radius:16px; padding:18px; min-height:320px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; border:1px solid rgba(255,255,255,0.02); box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+    /* Header / Scoreboard */
+    .header {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .score {
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+    .score-card {
+      min-width:150px;
+      padding:10px 14px;
+      border-radius:10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+      border:1px solid rgba(255,255,255,0.02);
+      text-align:center;
+    }
+    .score-card h4{ margin:0; color:var(--accent-gold); font-size:13px; letter-spacing:0.6px; }
+    .score-card p{ margin:6px 0 0 0; font-weight:800; font-size:20px; }
 
-    /* TRAIN: force single-line horizontal train with horizontal scroll */
-    .train{
+    /* Header controls */
+    .controls { display:flex; gap:10px; align-items:center; }
+
+    /* ===========================
+       Board area
+       =========================== */
+    .board {
+      position:relative;
+      min-height:380px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+    }
+
+    /* Train wrapper: single-line horizontal, smooth scroll */
+    .train-wrap {
+      width:100%;
+      padding:12px;
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      gap:10px;
+      overflow-x:auto;
+      -webkit-overflow-scrolling:touch;
+      scroll-behavior:smooth;
+      white-space:nowrap; /* prevent wrapping */
+      will-change:scroll-position;
+    }
+    .train-wrap::-webkit-scrollbar{ height:8px; }
+    .train-wrap::-webkit-scrollbar-thumb{ background: rgba(255,255,255,0.04); border-radius:8px; }
+
+    /* Placement hint dots */
+    .placement-hints {
+      position:absolute;
+      top:50%;
+      transform:translateY(-50%);
+      left:12px;
+      display:flex;
+      gap:8px;
+      z-index:30;
+      pointer-events:none;
+    }
+    .hint-dot {
+      width:12px; height:12px; border-radius:50%;
+      background: linear-gradient(180deg,var(--accent-cyan), #3ee7ff);
+      box-shadow: 0 8px 20px rgba(62,231,255,0.08);
+      opacity:0; transform:scale(0.6);
+      transition: all var(--fast) var(--easing);
+    }
+    .hint-dot.show{ opacity:1; transform:scale(1); }
+
+    /* Boneyard */
+    .boneyard {
+      position:absolute;
+      top:12px;
+      right:12px;
       display:flex;
       gap:8px;
       align-items:center;
-      justify-content:flex-start;
-      flex-wrap: nowrap; /* changed: keep single horizontal line */
-      max-width:100%;
-      padding:12px;
-      transform-origin:center;
-      transition:transform .35s cubic-bezier(.2,.9,.3,1);
-      overflow-x: auto; /* allow horizontal scroll */
-      scroll-behavior: smooth; /* smooth scrolling */
-      -webkit-overflow-scrolling: touch;
+      z-index:40;
     }
-
-    .domino{ width:84px; height:44px; border-radius:8px; background: linear-gradient(180deg, #f8fafc, #e6eef6); box-shadow: 0 8px 18px rgba(2,6,12,0.6), 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.6); border:1px solid rgba(0,0,0,0.12); display:flex; align-items:center; justify-content:space-between; padding:6px; gap:6px; transform-origin:center; transition: transform .28s cubic-bezier(.2,.9,.3,1), box-shadow .18s; position:relative; user-select:none; -webkit-user-select:none; }
-    .domino.dark{ background: linear-gradient(180deg, #0b1220, #0f1724); color:var(--tile); border:1px solid rgba(255,255,255,0.03); box-shadow: 0 10px 30px rgba(0,0,0,0.7), inset 0 -2px 6px rgba(255,255,255,0.02); }
-    .divider{ width:2px; height:100%; background: linear-gradient(180deg, rgba(0,0,0,0.2), rgba(255,255,255,0.06)); border-radius:2px; margin:0 6px; align-self:stretch; }
-    .half{ flex:1; display:flex; align-items:center; justify-content:center; gap:6px; position:relative; }
-    .pip{ width:8px; height:8px; background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(255,255,255,0.6)), #0b1220; border-radius:50%; box-shadow: 0 2px 4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.2); }
-    .domino.dark .pip{ background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.06), rgba(255,255,255,0.02)), var(--accent-2); box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.02); }
-
-    .pips-0 .pip{ display:none; }
-    .pips-1 .pip:nth-child(1){ display:block; margin:0; }
-    .pips-2{ justify-content:space-between; }
-    .pips-3{ justify-content:space-between; }
-    .pips-4{ justify-content:space-between; flex-wrap:wrap; align-content:space-between; }
-    .pips-5{ justify-content:space-between; flex-wrap:wrap; align-content:space-between; }
-    .pips-6{ justify-content:space-between; flex-wrap:wrap; align-content:space-between; }
-
-    @media (max-width:640px){ .domino{ width:64px; height:36px; border-radius:8px; padding:4px; } .pip{ width:7px; height:7px; } }
-
-    .hand{ position:fixed; left:0; right:0; bottom:0; background: linear-gradient(180deg, rgba(2,6,12,0.6), rgba(2,6,12,0.85)); border-top:1px solid rgba(255,255,255,0.02); padding:12px 18px; display:flex; align-items:center; justify-content:center; gap:12px; z-index:40; }
-    .hand-inner{ display:flex; gap:10px; align-items:center; justify-content:center; max-width:100%; overflow:auto; padding:6px; }
-    .hand .domino{ cursor:pointer; transform-origin:center; }
-    .hand .domino:hover{ transform: translateY(-8px) scale(1.03); box-shadow: 0 18px 40px rgba(0,0,0,0.7); }
-    .hand .domino.playable{ outline: 2px solid rgba(126,249,255,0.12); box-shadow: 0 18px 40px rgba(0,0,0,0.7), 0 0 18px rgba(126,249,255,0.06); transform: translateY(-10px) scale(1.05); }
-
-    .boneyard{ position:absolute; top:12px; right:12px; display:flex; gap:8px; align-items:center; z-index:30; }
-    .bone-stack{ width:64px; height:44px; border-radius:8px; background: linear-gradient(180deg,#0b1220,#071018); border:1px solid rgba(255,255,255,0.03); box-shadow: 0 8px 20px rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; color:var(--muted); font-weight:700; font-size:13px; cursor:pointer; user-select:none; }
-
-    .placement-hint{ position:absolute; top:50%; transform:translateY(-50%); left:12px; display:flex; gap:8px; align-items:center; z-index:20; }
-    .hint-dot{ width:12px; height:12px; border-radius:50%; background: linear-gradient(180deg,var(--accent-2), #3ee7ff); box-shadow: 0 6px 18px rgba(62,231,255,0.12), 0 2px 6px rgba(0,0,0,0.6); opacity:0.0; transform:scale(0.6); transition: all .28s cubic-bezier(.2,.9,.3,1); }
-    .hint-dot.show{ opacity:1; transform:scale(1); }
-
-    .modal{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:80; background: linear-gradient(180deg, rgba(2,6,12,0.6), rgba(2,6,12,0.85)); backdrop-filter: blur(6px) saturate(120%); }
-    .modal-card{ background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:14px; padding:22px; width: min(720px, 92%); box-shadow: 0 30px 80px rgba(0,0,0,0.7); border:1px solid rgba(255,255,255,0.03); text-align:center; }
-    .modal-card h2{ color:var(--accent); margin-bottom:6px; font-size:22px; }
-    .modal-card p{ color:var(--muted); margin-bottom:12px; }
-
-    .confetti-canvas{ position:fixed; inset:0; pointer-events:none; z-index:90; display:none; }
-
-    .shuffle-anim{ animation: shuffle 700ms ease-in-out; }
-    @keyframes shuffle{ 0%{ transform: translateY(0) rotate(0deg); } 25%{ transform: translateY(-6px) rotate(-2deg); } 50%{ transform: translateY(0) rotate(2deg); } 75%{ transform: translateY(-4px) rotate(-1deg); } 100%{ transform: translateY(0) rotate(0deg); } }
-
-    .snap{ animation: snap .36s cubic-bezier(.2,.9,.3,1); }
-    @keyframes snap{ 0%{ transform: scale(0.6) rotate(-10deg); opacity:0; } 60%{ transform: scale(1.05) rotate(6deg); opacity:1; } 100%{ transform: scale(1) rotate(0deg); opacity:1; } }
-
-    .muted{ color:var(--muted); font-size:13px; }
-    .btn{ background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.04); padding:8px 12px; border-radius:10px; color:var(--tile); font-weight:700; cursor:pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
-    .btn.primary{ background: linear-gradient(180deg, rgba(255,209,102,0.12), rgba(255,209,102,0.06)); color: #0b1220; border: 1px solid rgba(255,209,102,0.18); box-shadow: 0 10px 30px rgba(255,209,102,0.06); }
-
-    .status{ position:absolute; left:18px; bottom:18px; color:var(--muted); font-size:13px; z-index:50; display:flex; gap:12px; align-items:center; }
-
-    .rot-0{ transform: rotate(0deg); }
-    .rot-90{ transform: rotate(90deg); }
-    .rot-180{ transform: rotate(180deg); }
-    .rot-270{ transform: rotate(270deg); }
-
-    /* Tooltip for first-move rule */
-    .hint-tooltip{
-      position: absolute;
-      bottom: 84px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(10,14,20,0.9);
-      border: 1px solid rgba(255,255,255,0.04);
-      padding: 10px 14px;
-      border-radius: 10px;
-      color: var(--muted);
-      font-size: 13px;
-      z-index: 60;
+    .bone-stack {
+      width:72px; height:44px; border-radius:10px;
+      background: linear-gradient(180deg,#0b1220,#071018);
+      border:1px solid rgba(255,255,255,0.03);
       box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-      opacity: 0;
-      transition: opacity .28s;
-      pointer-events: none;
+      display:flex; align-items:center; justify-content:center;
+      color:var(--muted); font-weight:700; font-size:13px; cursor:pointer;
+      user-select:none;
+      transition: transform var(--fast) var(--easing);
     }
-    .hint-tooltip.show{ opacity: 1; pointer-events: auto; }
+    .bone-stack:active{ transform: translateY(2px); }
 
+    /* ===========================
+       Domino tile visuals
+       - 3D tactile feel using transform + shadow
+       - All interactive states use transform/opacity only
+       =========================== */
+    .tile {
+      display:inline-flex;
+      width:92px;
+      height:48px;
+      border-radius:10px;
+      background: linear-gradient(180deg,#0f1724,#0b1220);
+      border:1px solid rgba(255,255,255,0.03);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+      align-items:center;
+      justify-content:space-between;
+      padding:8px;
+      gap:6px;
+      transform-origin:center;
+      will-change: transform, opacity;
+      transition: transform var(--fast) var(--easing), box-shadow var(--fast) var(--easing), opacity var(--fast) var(--easing);
+      user-select:none;
+    }
+    .tile .half { display:flex; align-items:center; justify-content:center; gap:6px; flex:1; }
+    .tile .divider { width:2px; height:100%; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.2)); border-radius:2px; margin:0 6px; }
+
+    /* pip style */
+    .pip {
+      width:8px; height:8px; border-radius:50%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.06), rgba(255,255,255,0.02)), var(--accent-cyan);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+    }
+
+    /* tactile states */
+    .tile:hover { transform: translateY(-8px) rotateX(2deg) scale(1.03); box-shadow: 0 20px 60px rgba(0,0,0,0.7); }
+    .tile:active { transform: translateY(-2px) scale(0.995); }
+    .tile:focus { outline: 3px solid rgba(126,249,255,0.12); outline-offset:4px; }
+
+    /* playable highlight */
+    .tile.playable { box-shadow: 0 22px 70px rgba(126,249,255,0.06), 0 10px 40px rgba(0,0,0,0.7); transform: translateY(-10px) scale(1.04); border:1px solid rgba(126,249,255,0.08); }
+
+    /* small screens */
+    @media (max-width:640px){
+      .tile{ width:72px; height:40px; padding:6px; border-radius:8px; }
+      .bone-stack{ width:60px; height:36px; }
+    }
+
+    /* ===========================
+       Footer / Player hand
+       =========================== */
+    .footer {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .hand {
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:center;
+      overflow:auto;
+      padding:8px;
+      border-radius:10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+      border:1px solid rgba(255,255,255,0.02);
+    }
+
+    /* ===========================
+       Modal (glassmorphism)
+       =========================== */
+    .modal-backdrop {
+      position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+      background: linear-gradient(180deg, rgba(2,6,12,0.6), rgba(2,6,12,0.85));
+      z-index:60; backdrop-filter: blur(8px) saturate(120%);
+    }
+    .modal {
+      width:min(720px, 92%); padding:20px; border-radius:var(--radius-lg);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border:1px solid var(--glass-2); box-shadow: var(--elevation-1);
+      transform: translateY(8px); transition: transform var(--medium) var(--easing), opacity var(--medium) var(--easing);
+    }
+
+    /* Buttons */
+    .btn {
+      display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,255,255,0.04); color:var(--tile-light); cursor:pointer;
+      transition: transform var(--fast) var(--easing), box-shadow var(--fast) var(--easing);
+    }
+    .btn:active { transform: translateY(1px) scale(0.998); }
+    .btn.primary { background: linear-gradient(180deg, rgba(255,209,102,0.12), rgba(255,209,102,0.06)); color:#071018; border:1px solid rgba(255,209,102,0.18); }
+
+    /* small helpers */
+    .muted { color:var(--muted); font-size:13px; }
+    .center { display:flex; align-items:center; justify-content:center; }
+    .sr-only { position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; }
+
+    /* Performance: prefer transform/opacity for animations */
+    .anim-snap { animation: snap var(--medium) var(--easing) both; }
+    @keyframes snap {
+      0%{ transform: scale(0.6) rotate(-8deg); opacity:0; }
+      60%{ transform: scale(1.05) rotate(6deg); opacity:1; }
+      100%{ transform: scale(1) rotate(0deg); opacity:1; }
+    }
   </style>
 </head>
 <body>
-  <div id="app" class="app-wrap">
-    <div class="scoreboard" role="region" aria-label="Scoreboard">
-      <div class="score-pill">
-        <div class="score-card">
-          <h4>Player</h4>
+  <div class="app" id="app">
+    <!-- Header -->
+    <header class="panel header" role="banner" aria-label="Scoreboard">
+      <div class="score" aria-hidden="false">
+        <div class="score-card" aria-live="polite">
+          <h4>اللاعب</h4>
           <p id="player-score">0</p>
           <div class="muted">vs 101</div>
         </div>
-        <div class="score-card">
-          <h4>AI Opponent</h4>
+        <div class="score-card" aria-live="polite">
+          <h4>الذكاء الاصطناعي</h4>
           <p id="ai-score">0</p>
           <div class="muted">vs 101</div>
         </div>
       </div>
 
-      <div class="text-center">
-        <div class="muted">Round</div>
-        <div style="font-weight:800; font-size:18px" id="round-number">1</div>
-      </div>
+      <div class="muted">الجولة <strong id="round-number">1</strong></div>
 
-      <div class="flex items-center gap-3">
-        <button id="reset-match" class="btn" title="Reset match">Reset Match</button>
-        <div class="muted text-right">
-          <div id="turn-indicator">—</div>
-          <div style="font-size:12px" id="status-text">Welcome to Dominoes</div>
-        </div>
+      <div class="controls">
+        <select id="ai-mode" class="btn" title="AI Mode" aria-label="AI Mode">
+          <option value="easy">AI: سهل</option>
+          <option value="hard" selected>AI: صعب</option>
+        </select>
+        <button id="reset-match" class="btn">إعادة المباراة</button>
+        <div class="muted" id="status">جاهز</div>
       </div>
-    </div>
+    </header>
 
-    <div class="board-wrap mt-6" id="board-wrap">
-      <div class="placement-hint" id="placement-hint">
+    <!-- Board -->
+    <main class="panel board" role="main" aria-label="Game board">
+      <div class="placement-hints" id="placement-hints" aria-hidden="true">
         <div class="hint-dot" id="hint-left"></div>
         <div class="hint-dot" id="hint-right"></div>
       </div>
 
       <div class="boneyard" id="boneyard">
-        <div class="bone-stack" id="bone-stack" title="Boneyard — draw a tile">Boneyard</div>
+        <div class="bone-stack" id="bone-stack" role="button" aria-label="Boneyard">السحب</div>
         <div class="muted" id="boneyard-count">28</div>
       </div>
 
-      <div class="train" id="train" aria-live="polite" aria-atomic="true"></div>
-
-      <div class="status" id="status-bar">
-        <div id="last-play" class="muted">No plays yet</div>
+      <div class="train-wrap" id="train-wrap" role="list" aria-label="Domino train">
+        <!-- Tiles injected by JS -->
       </div>
 
-      <!-- Tooltip for first-move rule -->
-      <div id="first-move-tooltip" class="hint-tooltip" aria-hidden="true"></div>
-    </div>
+      <div class="sr-only" id="live-announcer" aria-live="polite"></div>
+    </main>
 
-    <div class="hand" id="player-hand-area" aria-label="Player hand">
-      <div class="hand-inner" id="player-hand"></div>
-    </div>
+    <!-- Footer / Player hand -->
+    <footer class="panel footer" role="contentinfo">
+      <div class="hand" id="player-hand" aria-label="Player hand">
+        <!-- Player tiles injected by JS -->
+      </div>
 
-    <div id="modal-root" style="display:none;"></div>
-    <canvas id="confetti" class="confetti-canvas" width="1920" height="1080"></canvas>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button id="draw-btn" class="btn">سحب</button>
+        <button id="end-turn-btn" class="btn primary">إنهاء الدور</button>
+      </div>
+    </footer>
+
+    <!-- Modal root -->
+    <div id="modal-root" aria-hidden="true"></div>
+
+    <!-- Confetti canvas -->
+    <canvas id="confetti" style="position:fixed; inset:0; pointer-events:none; z-index:80; display:none;"></canvas>
   </div>
 
+  <!-- ===========================
+       JavaScript: Modular, ES6+, heavily commented
+       Structure:
+         - Utils (helpers)
+         - Models (Tile)
+         - StateMachine (turns & phases)
+         - GameEngine (core state & rendering)
+         - AI (Easy & Hard)
+         - UI (DOM rendering & interactions)
+       =========================== -->
   <script>
-    (function(){
-      const $ = (s,r=document)=> r.querySelector(s);
-      const $$ = (s,r=document)=> Array.from(r.querySelectorAll(s));
-      const trainEl = $('#train');
-      const playerHandEl = $('#player-hand');
-      const boneStackEl = $('#bone-stack');
-      const boneyardCountEl = $('#boneyard-count');
-      const roundNumberEl = $('#round-number');
-      const playerScoreEl = $('#player-score');
-      const aiScoreEl = $('#ai-score');
-      const resetMatchBtn = $('#reset-match');
-      const modalRoot = $('#modal-root');
-      const turnIndicator = $('#turn-indicator');
-      const statusText = $('#status-text');
-      const lastPlay = $('#last-play');
-      const placementHintLeft = $('#hint-left');
-      const placementHintRight = $('#hint-right');
-      const boardWrap = $('#board-wrap');
-      const firstMoveTooltip = $('#first-move-tooltip');
-      const confettiCanvas = $('#confetti');
+  /* =========================================================================
+     Dominoes — Professional Web Edition
+     Author: Senior Front-End Game Developer (structured & commented)
+     Notes:
+       - All state is managed inside GameEngine
+       - UI module only reads state and renders; minimal logic in UI
+       - StateMachine enforces valid transitions
+       - AI module is pure logic (no DOM)
+     ========================================================================= */
 
-      const TARGET_SCORE = 101;
-      const PLAYER = 'player';
-      const AI = 'ai';
+  (function () {
+    'use strict';
 
-      let deck = [];
-      let boneyard = [];
-      let hands = { player: [], ai: [] };
-      let train = [];
-      let currentTurn = null;
-      let round = 1;
-      let scores = { player:0, ai:0 };
-      let roundStarter = null;
-      let roundWinner = null;
-      let animLock = false;
+    /* =========================
+       Utilities
+       ========================= */
+    const $ = (sel, root = document) => root.querySelector(sel);
+    const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const rand = n => Math.floor(Math.random() * n);
+    const sleep = ms => new Promise(res => setTimeout(res, ms));
 
-      // New state for first-move highest double rule
-      let highestDoubleTile = null; // {a,b,id}
-      let highestDoubleOwner = null; // 'player' or 'ai' or null
-      let roundFirstMove = true;
+    /* =========================
+       Tile Model
+       Immutable representation of a domino tile
+       { a: number, b: number, id: string }
+       ========================= */
+    class Tile {
+      constructor(a, b) {
+        this.a = a;
+        this.b = b;
+        this.id = `${a}-${b}`;
+      }
+      // pip sum
+      sum() { return this.a + this.b; }
+      // is double
+      isDouble() { return this.a === this.b; }
+      // clone
+      clone() { return new Tile(this.a, this.b); }
+      // flipped clone
+      flipped() { return new Tile(this.b, this.a); }
+    }
 
-      function buildDeck(){
-        const arr=[];
-        for(let i=0;i<=6;i++){
-          for(let j=i;j<=6;j++){
-            arr.push({a:i,b:j,id:`${i}-${j}`});
+    /* =========================
+       State Machine
+       - phases: 'setup' -> 'playing' -> 'roundEnd' -> 'matchEnd'
+       - turns: 'player' or 'ai'
+       - ensures valid transitions and centralizes side effects
+       ========================= */
+    class StateMachine {
+      constructor(engine) {
+        this.engine = engine;
+        this.phase = 'setup';
+        this.turn = null;
+      }
+
+      // Start playing phase
+      startRound(starter) {
+        this.phase = 'playing';
+        this.turn = starter;
+        this.engine.ui.updateStatus(`${starter === 'player' ? 'دورك' : 'دور AI'}`);
+      }
+
+      // Switch turn
+      switchTurn() {
+        if (this.phase !== 'playing') return;
+        this.turn = this.turn === 'player' ? 'ai' : 'player';
+        this.engine.ui.updateStatus(`${this.turn === 'player' ? 'دورك' : 'دور AI'}`);
+      }
+
+      // End round
+      endRound(winner, points, reason) {
+        this.phase = 'roundEnd';
+        this.engine.onRoundEnd(winner, points, reason);
+      }
+
+      // End match
+      endMatch(champion) {
+        this.phase = 'matchEnd';
+        this.engine.onMatchEnd(champion);
+      }
+
+      // Reset to setup
+      reset() {
+        this.phase = 'setup';
+        this.turn = null;
+      }
+    }
+
+    /* =========================
+       AI Module
+       - Two modes: easy (random playable) and hard (heuristic)
+       - Pure functions: accept state, return chosen tile & side
+       - Side: 'left' or 'right'
+       ========================= */
+    const AI = {
+      // Determine playable tiles for a hand given train ends
+      playableTiles(hand, train) {
+        if (train.length === 0) return hand.slice();
+        const left = train[0].a;
+        const right = train[train.length - 1].b;
+        return hand.filter(t => t.a === left || t.b === left || t.a === right || t.b === right);
+      },
+
+      // Easy: random playable tile, random valid side
+      easyMove(state) {
+        const playable = AI.playableTiles(state.hands.ai, state.train);
+        if (!playable.length) return null;
+        const tile = playable[rand(playable.length)];
+        const side = AI.chooseSide(tile, state.train);
+        return { tile, side };
+      },
+
+      // Hard: heuristic prioritizing doubles and high pip sums, also tries to block player
+      hardMove(state) {
+        const playable = AI.playableTiles(state.hands.ai, state.train);
+        if (!playable.length) return null;
+
+        // Score function: doubles get big bonus, higher sum preferred
+        const scoreTile = (tile) => {
+          let score = tile.sum();
+          if (tile.isDouble()) score += 50;
+          // prefer tiles that reduce player's future options: if playing this tile will make ends uncommon
+          const left = state.train.length ? state.train[0].a : null;
+          const right = state.train.length ? state.train[state.train.length - 1].b : null;
+          // penalize leaving ends that player likely has
+          const playerCounts = AI.countPips(state.hands.player);
+          // if tile placed on right, new right becomes tile.b (after orientation)
+          // approximate: prefer moves that create ends with low playerCounts
+          const leftImpact = left !== null ? playerCounts[left] : 0;
+          const rightImpact = right !== null ? playerCounts[right] : 0;
+          score -= Math.min(leftImpact, rightImpact) * 0.5;
+          return score;
+        };
+
+        playable.sort((x, y) => scoreTile(y) - scoreTile(x));
+        const chosen = playable[0];
+        const side = AI.chooseSide(chosen, state.train, state.hands.player);
+        return { tile: chosen, side };
+      },
+
+      // Choose side heuristically: prefer side that keeps higher pip towards center
+      chooseSide(tile, train, playerHand = []) {
+        if (train.length === 0) return 'right';
+        const left = train[0].a;
+        const right = train[train.length - 1].b;
+        const canLeft = tile.a === left || tile.b === left;
+        const canRight = tile.a === right || tile.b === right;
+        if (canLeft && !canRight) return 'left';
+        if (canRight && !canLeft) return 'right';
+        // both possible: choose side that results in end value less common in player's hand
+        const playerCounts = AI.countPips(playerHand);
+        // if placed on left, new left becomes tile.a or tile.b depending orientation; approximate choose side with lower player count
+        const leftEndAfter = (tile.a === left) ? tile.b : tile.a;
+        const rightEndAfter = (tile.a === right) ? tile.b : tile.a;
+        const leftScore = playerCounts[leftEndAfter] || 0;
+        const rightScore = playerCounts[rightEndAfter] || 0;
+        return leftScore <= rightScore ? 'left' : 'right';
+      },
+
+      // Count pips frequency in a hand
+      countPips(hand) {
+        const counts = Array(7).fill(0);
+        hand.forEach(t => { counts[t.a]++; counts[t.b]++; });
+        return counts;
+      }
+    };
+
+    /* =========================
+       Game Engine
+       - Holds all game state
+       - Responsible for rules, scoring, dealing, and round/match lifecycle
+       - Exposes methods for UI to call
+       ========================= */
+    class GameEngine {
+      constructor(ui) {
+        this.ui = ui; // UI bridge
+        this.state = {
+          deck: [],
+          boneyard: [],
+          hands: { player: [], ai: [] },
+          train: [], // placed tiles (Tile instances)
+          scores: { player: 0, ai: 0 },
+          round: 1,
+          starter: null,
+          highestDouble: null, // {tile, owner}
+          animLock: false,
+          aiMode: 'hard'
+        };
+        this.sm = new StateMachine(this);
+        this.motion = { snapMs: 360 }; // sync with CSS
+      }
+
+      /* -------------------------
+         Setup & Deck utilities
+         ------------------------- */
+      buildDeck() {
+        const deck = [];
+        for (let i = 0; i <= 6; i++) {
+          for (let j = i; j <= 6; j++) {
+            deck.push(new Tile(i, j));
           }
         }
-        return arr;
+        return deck;
       }
-      function shuffle(arr){
-        for(let i=arr.length-1;i>0;i--){
-          const j = Math.floor(Math.random()*(i+1));
-          [arr[i],arr[j]]=[arr[j],arr[i]];
+
+      shuffle(arr) {
+        // Fisher-Yates
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
         }
         return arr;
       }
 
-      function deal(){
-        hands.player=[]; hands.ai=[];
-        for(let i=0;i<7;i++){
-          hands.player.push(boneyard.pop());
-          hands.ai.push(boneyard.pop());
+      dealHands() {
+        // Each player gets 7 tiles
+        this.state.hands.player = [];
+        this.state.hands.ai = [];
+        for (let i = 0; i < 7; i++) {
+          this.state.hands.player.push(this.state.boneyard.pop());
+          this.state.hands.ai.push(this.state.boneyard.pop());
         }
       }
 
-      function determineStarter(){
-        const all = [...hands.player.map(t=>({...t,owner:PLAYER})), ...hands.ai.map(t=>({...t,owner:AI}))];
-        const doubles = all.filter(t=>t.a===t.b);
-        if(doubles.length){
-          doubles.sort((x,y)=> (y.a - x.a));
+      startMatch() {
+        // Reset scores & round
+        this.state.scores = { player: 0, ai: 0 };
+        this.state.round = 1;
+        this.ui.updateScoreboard(this.state.scores, this.state.round);
+        this.startRound(true);
+      }
+
+      startRound(isInitial = false, prevWinner = null) {
+        // Reset board & deck
+        this.state.deck = this.buildDeck();
+        this.shuffle(this.state.deck);
+        this.state.boneyard = [...this.state.deck];
+        this.state.train = [];
+        this.state.hands.player = [];
+        this.state.hands.ai = [];
+        this.dealHands();
+        this.state.highestDouble = this.findHighestDouble();
+        this.state.animLock = false;
+
+        // Determine starter
+        if (isInitial) {
+          this.state.starter = this.determineStarter();
+        } else {
+          this.state.starter = prevWinner || this.state.starter || 'player';
+        }
+
+        // Round first move flag
+        this.state.roundFirstMove = true;
+
+        // Update UI
+        this.ui.renderAll(this.state);
+        this.ui.updateBoneyardCount(this.state.boneyard.length);
+        this.ui.updateScoreboard(this.state.scores, this.state.round);
+
+        // Start state machine
+        this.sm.startRound(this.state.starter);
+
+        // If AI starts, schedule AI move
+        if (this.sm.turn === 'ai') {
+          this.ui.announce('AI يبدأ الجولة');
+          this.scheduleAI(700);
+        } else {
+          // If player starts and must play highest double, show hint
+          if (this.state.highestDouble && this.state.highestDouble.owner === 'player') {
+            this.ui.showTooltip(`يجب أن تبدأ بأعلى دبل لديك: ${this.state.highestDouble.tile.id}`);
+          }
+        }
+      }
+
+      // Find highest double across both hands
+      findHighestDouble() {
+        const all = [...this.state.hands.player.map(t => ({ tile: t, owner: 'player' })), ...this.state.hands.ai.map(t => ({ tile: t, owner: 'ai' }))];
+        const doubles = all.filter(x => x.tile.isDouble());
+        if (!doubles.length) return null;
+        doubles.sort((x, y) => y.tile.a - x.tile.a);
+        return doubles[0]; // {tile, owner}
+      }
+
+      // Determine starter by highest double or highest pip sum
+      determineStarter() {
+        const all = [...this.state.hands.player.map(t => ({ tile: t, owner: 'player' })), ...this.state.hands.ai.map(t => ({ tile: t, owner: 'ai' }))];
+        const doubles = all.filter(x => x.tile.isDouble());
+        if (doubles.length) {
+          doubles.sort((x, y) => y.tile.a - x.tile.a);
           return doubles[0].owner;
         }
-        all.sort((x,y)=> ((y.a+y.b) - (x.a+x.b)));
+        // else highest pip sum
+        all.sort((x, y) => (y.tile.sum() - x.tile.sum()));
         return all[0].owner;
       }
 
-      function findHighestDouble(){
-        const all = [...hands.player.map(t=>({...t,owner:PLAYER})), ...hands.ai.map(t=>({...t,owner:AI}))];
-        const doubles = all.filter(t=>t.a===t.b);
-        if(doubles.length===0) { highestDoubleTile = null; highestDoubleOwner = null; return; }
-        doubles.sort((x,y)=> (y.a - x.a));
-        highestDoubleTile = {a:doubles[0].a, b:doubles[0].b, id:doubles[0].id};
-        highestDoubleOwner = doubles[0].owner;
-      }
+      /* -------------------------
+         Gameplay: validation & placement
+         ------------------------- */
 
-      function renderTrain(){
-        trainEl.innerHTML='';
-        train.forEach((tile, idx)=>{
-          const el = createTileElement(tile, false);
-          el.classList.add('snap');
-          el.style.transitionDelay = (idx*20)+'ms';
-          trainEl.appendChild(el);
-        });
-      }
-
-      function renderHand(){
-        playerHandEl.innerHTML='';
-        hands.player.forEach((tile, idx)=>{
-          const el = createTileElement(tile, true);
-          el.tabIndex = 0;
-          el.dataset.index = idx;
-          if(isTilePlayable(tile, PLAYER)) el.classList.add('playable');
-          playerHandEl.appendChild(el);
-        });
-      }
-
-      function createTileElement(tile, isHand=false){
-        const wrapper = document.createElement('div');
-        wrapper.className = 'domino dark';
-        wrapper.setAttribute('role','button');
-        wrapper.setAttribute('aria-label', `Tile ${tile.a} and ${tile.b}`);
-        if(tile.rot) wrapper.classList.add(`rot-${tile.rot}`); else wrapper.classList.add('rot-0');
-
-        const left = document.createElement('div'); left.className = 'half pips-'+tile.a;
-        for(let i=0;i<getPipCount(tile.a);i++){ const p=document.createElement('div'); p.className='pip'; left.appendChild(p); }
-        const div = document.createElement('div'); div.className='divider';
-        const right = document.createElement('div'); right.className = 'half pips-'+tile.b;
-        for(let i=0;i<getPipCount(tile.b);i++){ const p=document.createElement('div'); p.className='pip'; right.appendChild(p); }
-
-        wrapper.appendChild(left); wrapper.appendChild(div); wrapper.appendChild(right);
-        wrapper.style.transform = `perspective(600px) rotateX(2deg) rotateY(-1deg)`;
-
-        if(isHand){
-          wrapper.addEventListener('mouseenter', ()=> wrapper.classList.add('shuffle-anim'));
-          wrapper.addEventListener('mouseleave', ()=> wrapper.classList.remove('shuffle-anim'));
-          wrapper.addEventListener('click', onPlayerTileClick);
-          wrapper.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); onPlayerTileClick.call(wrapper,e); }});
-        }
-        return wrapper;
-      }
-
-      function getPipCount(n){ return n===0 ? 1 : n; }
-
-      // Updated isTilePlayable to enforce first-move highest double rule
-      function isTilePlayable(tile, who){
-        // If train empty and it's the first move of the round and highestDouble exists and owner is the starter:
-        if(train.length === 0 && roundFirstMove && highestDoubleTile){
-          // If the current mover is the owner of highest double, they may only play that double
-          if(highestDoubleOwner === who){
-            return tile.id === highestDoubleTile.id;
+      // Check if a tile is playable for a given player considering first-move highest double rule
+      isTilePlayable(tile, who) {
+        // If train empty and it's first move and highestDouble exists and owner is starter:
+        if (this.state.train.length === 0 && this.state.roundFirstMove && this.state.highestDouble) {
+          if (this.state.highestDouble.owner === who) {
+            // owner must play that exact tile
+            return tile.id === this.state.highestDouble.tile.id;
           } else {
             // other player cannot play until owner plays highest double
             return false;
           }
         }
 
-        if(train.length === 0) return true;
-        const leftEnd = train[0].a;
-        const rightEnd = train[train.length-1].b;
-        return tile.a === leftEnd || tile.b === leftEnd || tile.a === rightEnd || tile.b === rightEnd;
+        if (this.state.train.length === 0) return true;
+        const left = this.state.train[0].a;
+        const right = this.state.train[this.state.train.length - 1].b;
+        return tile.a === left || tile.b === left || tile.a === right || tile.b === right;
       }
 
-      function getPlayableTiles(hand){
-        return hand.filter(t => isTilePlayable(t, hand === hands.player ? PLAYER : AI));
+      // Get playable tiles for a hand
+      getPlayableTiles(hand, who) {
+        return hand.filter(t => this.isTilePlayable(t, who));
       }
 
-      function onPlayerTileClick(e){
-        if(animLock) return;
-        if(currentTurn !== PLAYER) return;
-        const idx = parseInt(this.dataset.index,10);
-        const tile = hands.player[idx];
-        if(!isTilePlayable(tile, PLAYER)){
-          // If it's first move and player must play highest double, show tooltip
-          if(train.length===0 && roundFirstMove && highestDoubleTile && highestDoubleOwner === PLAYER){
-            showHintTooltip(`يجب عليك البدء بأعلى دبل لديك: ${highestDoubleTile.a}-${highestDoubleTile.b}`);
-            return;
-          }
-          flashStatus('Tile not playable. Draw from boneyard if needed.');
-          return;
-        }
-        showPlacementHints(tile);
-        placePlayerTile(idx);
-      }
+      // Place tile (common for player & AI)
+      async placeTile(tile, who, side = 'right') {
+        if (this.state.animLock) return false;
+        // Validate
+        const hand = who === 'player' ? this.state.hands.player : this.state.hands.ai;
+        const idx = hand.findIndex(t => t.id === tile.id);
+        if (idx === -1 && who === 'player') return false; // not in player's hand
+        if (!this.isTilePlayable(tile, who)) return false;
 
-      function showPlacementHints(tile){
-        placementHintLeft.classList.remove('show');
-        placementHintRight.classList.remove('show');
-        if(train.length === 0){
-          placementHintLeft.classList.add('show');
-          placementHintRight.classList.add('show');
-          return;
-        }
-        const leftEnd = train[0].a;
-        const rightEnd = train[train.length-1].b;
-        if(tile.a === leftEnd || tile.b === leftEnd) placementHintLeft.classList.add('show');
-        if(tile.a === rightEnd || tile.b === rightEnd) placementHintRight.classList.add('show');
-      }
+        this.state.animLock = true;
 
-      function placePlayerTile(handIndex){
-        const tile = hands.player[handIndex];
-        if(!isTilePlayable(tile, PLAYER)) return;
-        let side = null;
-        if(train.length === 0) side = 'right';
+        // Remove from hand
+        if (who === 'player') hand.splice(idx, 1);
         else {
-          const leftEnd = train[0].a;
-          const rightEnd = train[train.length-1].b;
-          const canLeft = (tile.a === leftEnd || tile.b === leftEnd);
-          const canRight = (tile.a === rightEnd || tile.b === rightEnd);
-          if(canRight && !canLeft) side = 'right';
-          else if(canLeft && !canRight) side = 'left';
-          else side = 'right';
-        }
-        performPlace(tile, handIndex, PLAYER, side);
-      }
-
-      function performPlace(tile, handIndex, who, side){
-        animLock = true;
-        if(who === PLAYER) hands.player.splice(handIndex,1);
-        else {
-          const idx = hands.ai.findIndex(t=>t.id===tile.id);
-          if(idx>=0) hands.ai.splice(idx,1);
+          const aiIdx = this.state.hands.ai.findIndex(t => t.id === tile.id);
+          if (aiIdx >= 0) this.state.hands.ai.splice(aiIdx, 1);
         }
 
-        let placed = {...tile};
-        placed.rot = (side === 'left') ? 270 : 90;
-
-        if(side === 'left'){
-          const leftEnd = train.length ? train[0].a : null;
-          if(train.length && placed.b !== leftEnd) [placed.a,placed.b] = [placed.b,placed.a];
-          train.unshift(placed);
+        // Orient tile so that matching pip aligns with train end
+        const placed = tile.clone();
+        if (this.state.train.length === 0) {
+          // first tile: push to right
+          this.state.train.push(placed);
+        } else if (side === 'left') {
+          const leftEnd = this.state.train[0].a;
+          if (placed.b !== leftEnd) [placed.a, placed.b] = [placed.b, placed.a];
+          this.state.train.unshift(placed);
         } else {
-          const rightEnd = train.length ? train[train.length-1].b : null;
-          if(train.length && placed.a !== rightEnd) [placed.a,placed.b] = [placed.b,placed.a];
-          train.push(placed);
+          const rightEnd = this.state.train[this.state.train.length - 1].b;
+          if (placed.a !== rightEnd) [placed.a, placed.b] = [placed.b, placed.a];
+          this.state.train.push(placed);
         }
 
-        // After first placement, mark that first move has occurred
-        if(roundFirstMove) roundFirstMove = false;
+        // After first placement, clear first-move flag
+        if (this.state.roundFirstMove) this.state.roundFirstMove = false;
 
-        renderTrain();
-        renderHand();
-        updateBoneyardCount();
-        lastPlay.textContent = `${who === PLAYER ? 'Player' : 'AI'} played ${tile.a}-${tile.b}`;
-        showPlacementHints({a:-1,b:-1});
+        // Render & animate
+        this.ui.renderTrain(this.state.train);
+        this.ui.renderHand(this.state.hands.player);
+        this.ui.updateBoneyardCount(this.state.boneyard.length);
+        this.ui.announce(`${who === 'player' ? 'اللاعب' : 'AI'} لعب ${tile.id}`);
 
-        // Scroll train to show the new tile after animation completes
-        setTimeout(()=> {
-          scrollTrainToEnd(side);
-        }, 360); // sync with .snap animation
+        // Wait for snap animation to complete then scroll
+        await sleep(this.motion.snapMs + 40);
+        this.ui.scrollTrainToEnd(side);
 
-        setTimeout(()=>{
-          animLock = false;
-          checkRoundEnd(who);
-          if(!isRoundOver()){
-            currentTurn = (who === PLAYER) ? AI : PLAYER;
-            updateTurnIndicator();
-            if(currentTurn === AI) setTimeout(aiTurn, 600);
+        // Unlock
+        this.state.animLock = false;
+
+        // Check round end
+        const roundOver = this.checkRoundEnd();
+        if (!roundOver) {
+          // Next turn
+          this.sm.switchTurn();
+          if (this.sm.turn === 'ai') {
+            this.scheduleAI(450);
           }
-        }, 420);
+        }
+        return true;
       }
 
-      function aiTurn(){
-        if(animLock) return;
-        // If train empty and it's first move and AI owns highest double, force play it
-        if(train.length === 0 && roundFirstMove && highestDoubleTile && highestDoubleOwner === AI){
-          const idx = hands.ai.findIndex(t=>t.id===highestDoubleTile.id);
-          if(idx>=0){
-            // play that double
-            const chosen = hands.ai[idx];
-            performPlace(chosen, null, AI, 'right');
-            return;
-          }
+      // Draw from boneyard
+      draw(who) {
+        if (!this.state.boneyard.length) return null;
+        const tile = this.state.boneyard.pop();
+        if (who === 'player') {
+          this.state.hands.player.push(tile);
+          this.ui.renderHand(this.state.hands.player);
+        } else {
+          this.state.hands.ai.push(tile);
         }
-
-        const playable = getPlayableTiles(hands.ai);
-        if(playable.length === 0){
-          if(boneyard.length > 0){
-            drawFromBoneyard(AI);
-            setTimeout(aiTurn, 450);
-            return;
-          } else {
-            currentTurn = PLAYER;
-            updateTurnIndicator();
-            flashStatus('AI passes — no playable tiles');
-            return;
-          }
-        }
-
-        playable.sort((x,y)=>{
-          const xScore = (x.a===x.b?100:0) + (x.a+x.b);
-          const yScore = (y.a===y.b?100:0) + (y.a+y.b);
-          return yScore - xScore;
-        });
-
-        const chosen = playable[0];
-        let side = 'right';
-        if(train.length === 0) side = 'right';
-        else {
-          const leftEnd = train[0].a;
-          const rightEnd = train[train.length-1].b;
-          const canLeft = (chosen.a === leftEnd || chosen.b === leftEnd);
-          const canRight = (chosen.a === rightEnd || chosen.b === rightEnd);
-          if(canRight && !canLeft) side = 'right';
-          else if(canLeft && !canRight) side = 'left';
-          else side = 'right';
-        }
-
-        performPlace(chosen, null, AI, side);
-      }
-
-      function drawFromBoneyard(who){
-        if(boneyard.length === 0) return null;
-        const tile = boneyard.pop();
-        if(who === PLAYER){ hands.player.push(tile); renderHand(); }
-        else hands.ai.push(tile);
-        updateBoneyardCount();
-        flashStatus(`${who === PLAYER ? 'You' : 'AI'} drew a tile`);
+        this.ui.updateBoneyardCount(this.state.boneyard.length);
+        this.ui.announce(`${who === 'player' ? 'اللاعب' : 'AI'} سحب قطعة`);
         return tile;
       }
 
-      function updateBoneyardCount(){ boneyardCountEl.textContent = boneyard.length; }
-
-      function checkRoundEnd(lastMover){
-        if(hands.player.length === 0 || hands.ai.length === 0){
-          const winner = hands.player.length === 0 ? PLAYER : AI;
-          roundWinner = winner;
-          const loser = winner === PLAYER ? AI : PLAYER;
-          const points = sumPips(hands[loser]);
-          scores[winner] += points;
-          showRoundModal(winner, points, `${winner === PLAYER ? 'You' : 'AI'} emptied hand`);
-          return;
+      // Check round end conditions and scoring
+      checkRoundEnd() {
+        // Domino (empty hand)
+        if (this.state.hands.player.length === 0 || this.state.hands.ai.length === 0) {
+          const winner = this.state.hands.player.length === 0 ? 'player' : 'ai';
+          const loser = winner === 'player' ? 'ai' : 'player';
+          const points = this.sumPips(this.state.hands[loser]);
+          this.state.scores[winner] += points;
+          this.ui.updateScoreboard(this.state.scores, this.state.round);
+          this.sm.endRound(winner, points, 'domino');
+          return true;
         }
 
-        const playerPlayable = getPlayableTiles(hands.player).length > 0;
-        const aiPlayable = getPlayableTiles(hands.ai).length > 0;
-        if(!playerPlayable && !aiPlayable && boneyard.length === 0){
-          const playerPips = sumPips(hands.player);
-          const aiPips = sumPips(hands.ai);
-          let winner, points;
-          if(playerPips < aiPips){ winner = PLAYER; points = aiPips - playerPips; }
-          else if(aiPips < playerPips){ winner = AI; points = playerPips - aiPips; }
-          else { winner = null; points = 0; }
-          if(winner){ scores[winner] += points; roundWinner = winner; showRoundModal(winner, points, `Blocked game — ${winner === PLAYER ? 'You' : 'AI'} had lower pips`); }
-          else { roundWinner = null; showRoundModal(null, 0, 'Blocked game — tie, no points awarded'); }
-          return;
+        // Blocked: no playable tiles for both and boneyard empty
+        const playerPlayable = this.getPlayableTiles(this.state.hands.player, 'player').length > 0;
+        const aiPlayable = this.getPlayableTiles(this.state.hands.ai, 'ai').length > 0;
+        if (!playerPlayable && !aiPlayable && this.state.boneyard.length === 0) {
+          const playerPips = this.sumPips(this.state.hands.player);
+          const aiPips = this.sumPips(this.state.hands.ai);
+          let winner = null, points = 0;
+          if (playerPips < aiPips) { winner = 'player'; points = aiPips - playerPips; }
+          else if (aiPips < playerPips) { winner = 'ai'; points = playerPips - aiPips; }
+          // tie -> no points
+          if (winner) {
+            this.state.scores[winner] += points;
+            this.ui.updateScoreboard(this.state.scores, this.state.round);
+            this.sm.endRound(winner, points, 'blocked');
+          } else {
+            this.sm.endRound(null, 0, 'blocked-tie');
+          }
+          return true;
         }
+        return false;
       }
 
-      function sumPips(hand){ return hand.reduce((s,t)=> s + t.a + t.b, 0); }
+      sumPips(hand) {
+        return hand.reduce((s, t) => s + t.a + t.b, 0);
+      }
 
-      function showRoundModal(winner, points, message){
-        animLock = true;
-        modalRoot.innerHTML = '';
-        const modal = document.createElement('div'); modal.className='modal';
-        modal.innerHTML = `
-          <div class="modal-card">
-            <h2>${winner ? (winner===PLAYER ? 'Round Winner — You' : 'Round Winner — AI') : 'Round Result'}</h2>
-            <p class="muted">${message}</p>
-            <div style="font-size:18px; font-weight:800; margin:8px 0;">
-              ${points>0 ? `Points gained: <span style="color:var(--accent)">${points}</span>` : '<span class="muted">No points awarded</span>'}
-            </div>
-            <div style="display:flex; gap:12px; justify-content:center; margin-top:12px;">
-              <button id="next-round" class="btn primary">Next Round</button>
-              <button id="view-board" class="btn">View Board</button>
-            </div>
-            <div style="margin-top:12px; color:var(--muted); font-size:13px;">
-              Match Score — You: <strong>${scores.player}</strong> • AI: <strong>${scores.ai}</strong>
-            </div>
-          </div>
-        `;
-        modalRoot.appendChild(modal); modalRoot.style.display='block';
+      // Called by StateMachine when round ends
+      onRoundEnd(winner, points, reason) {
+        // Show modal with round result
+        this.ui.showRoundModal(winner, points, reason, this.state.scores);
+        // After user clicks next round, engine.startRound(false, winner) will be called by UI
+      }
 
-        if(scores.player >= TARGET_SCORE || scores.ai >= TARGET_SCORE){
-          setTimeout(()=> showMatchVictory(scores.player >= TARGET_SCORE ? PLAYER : AI), 700);
-        }
+      // Called by StateMachine when match ends
+      onMatchEnd(champion) {
+        this.ui.showMatchVictory(champion, this.state.scores);
+      }
 
-        $('#next-round').addEventListener('click', ()=>{
-          modalRoot.style.display='none'; modalRoot.innerHTML=''; animLock=false;
-          round++; roundStarter = winner || roundStarter || PLAYER;
-          startRound(false, winner);
+      // Schedule AI move with small delay
+      scheduleAI(delay = 500) {
+        if (this.state.animLock) return;
+        setTimeout(async () => {
+          if (this.sm.phase !== 'playing' || this.sm.turn !== 'ai') return;
+          // AI decision
+          const aiMode = this.state.aiMode;
+          let move = null;
+          if (this.state.train.length === 0 && this.state.roundFirstMove && this.state.highestDouble && this.state.highestDouble.owner === 'ai') {
+            // Force AI to play highest double if it owns it
+            const tile = this.state.highestDouble.tile;
+            move = { tile, side: 'right' };
+          } else {
+            if (aiMode === 'easy') move = AI.easyMove(this.state);
+            else move = AI.hardMove(this.state);
+          }
+
+          if (!move) {
+            // draw until playable or boneyard empty
+            if (this.state.boneyard.length > 0) {
+              this.draw('ai');
+              // schedule another attempt
+              this.scheduleAI(350);
+            } else {
+              // pass turn
+              this.ui.announce('AI يمرر الدور');
+              this.sm.switchTurn();
+              this.ui.updateStatus('دورك');
+            }
+            return;
+          }
+
+          // Place chosen tile
+          await this.placeTile(move.tile, 'ai', move.side);
+        }, delay);
+      }
+
+      // End turn (player chooses to end)
+      endPlayerTurn() {
+        if (this.sm.turn !== 'player') return;
+        this.sm.switchTurn();
+        if (this.sm.turn === 'ai') this.scheduleAI(400);
+      }
+
+      // Reset match (UI triggers)
+      resetMatch() {
+        this.sm.reset();
+        this.startMatch();
+      }
+
+      // Set AI mode
+      setAIMode(mode) {
+        this.state.aiMode = mode;
+      }
+    }
+
+    /* =========================
+       UI Module
+       - Responsible for DOM rendering and user interactions
+       - Minimal logic: delegates to GameEngine for rules
+       ========================= */
+    class UI {
+      constructor() {
+        // DOM refs
+        this.trainWrap = $('#train-wrap');
+        this.playerHand = $('#player-hand');
+        this.boneStack = $('#bone-stack');
+        this.boneyardCount = $('#boneyard-count');
+        this.playerScoreEl = $('#player-score');
+        this.aiScoreEl = $('#ai-score');
+        this.roundNumberEl = $('#round-number');
+        this.statusEl = $('#status');
+        this.modalRoot = $('#modal-root');
+        this.placementHints = $('#placement-hints');
+        this.hintLeft = $('#hint-left');
+        this.hintRight = $('#hint-right');
+        this.liveAnnouncer = $('#live-announcer');
+        this.confettiCanvas = $('#confetti');
+
+        // Bind UI events placeholders (set by attach)
+        this.onTileClick = null;
+        this.onDraw = null;
+        this.onEndTurn = null;
+        this.onResetMatch = null;
+        this.onAIModeChange = null;
+
+        // Setup event listeners
+        this.setupControls();
+      }
+
+      setupControls() {
+        // Draw button
+        $('#draw-btn').addEventListener('click', () => {
+          if (this.onDraw) this.onDraw();
         });
-        $('#view-board').addEventListener('click', ()=>{
-          modalRoot.style.display='none'; modalRoot.innerHTML=''; animLock=false;
+        // End turn
+        $('#end-turn-btn').addEventListener('click', () => {
+          if (this.onEndTurn) this.onEndTurn();
         });
-        updateScoreboard();
+        // Boneyard click
+        this.boneStack.addEventListener('click', () => {
+          if (this.onDraw) this.onDraw();
+        });
+        // Reset match
+        $('#reset-match').addEventListener('click', () => {
+          if (confirm('إعادة المباراة؟ سيتم إعادة النقاط والجولات.')) {
+            if (this.onResetMatch) this.onResetMatch();
+          }
+        });
+        // AI mode select
+        $('#ai-mode').addEventListener('change', (e) => {
+          if (this.onAIModeChange) this.onAIModeChange(e.target.value);
+        });
       }
 
-      function isRoundOver(){
-        return (hands.player.length === 0 || hands.ai.length === 0 || (!getPlayableTiles(hands.player).length && !getPlayableTiles(hands.ai).length && boneyard.length === 0));
+      /* -------------------------
+         Rendering helpers
+         ------------------------- */
+
+      // Render entire UI (train + hand)
+      renderAll(state) {
+        this.renderTrain(state.train);
+        this.renderHand(state.hands.player);
+        this.updateBoneyardCount(state.boneyard.length);
+        this.updateScoreboard(state.scores, state.round);
       }
 
-      function startRound(isInitial=false, prevWinner=null){
-        deck = buildDeck(); shuffle(deck); boneyard = [...deck]; train = []; hands.player=[]; hands.ai=[];
-        deal(); updateBoneyardCount();
-        findHighestDouble(); // compute highest double for this round
-        roundFirstMove = true;
+      // Render train tiles
+      renderTrain(train) {
+        // Clear and re-render
+        this.trainWrap.innerHTML = '';
+        train.forEach((tile, idx) => {
+          const el = this.createTileElement(tile, false);
+          // Add snap animation for newly placed tiles
+          el.classList.add('anim-snap');
+          el.style.transitionDelay = `${idx * 20}ms`;
+          this.trainWrap.appendChild(el);
+        });
+      }
 
-        if(isInitial) roundStarter = determineStarter();
-        else { if(prevWinner) roundStarter = prevWinner; }
+      // Render player's hand
+      renderHand(hand) {
+        this.playerHand.innerHTML = '';
+        hand.forEach((tile, idx) => {
+          const el = this.createTileElement(tile, true);
+          el.tabIndex = 0;
+          el.dataset.index = idx;
+          // Click handler
+          el.addEventListener('click', (e) => {
+            if (this.onTileClick) this.onTileClick(tile);
+          });
+          el.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              if (this.onTileClick) this.onTileClick(tile);
+            }
+          });
+          this.playerHand.appendChild(el);
+        });
+      }
 
-        currentTurn = roundStarter;
-        updateTurnIndicator();
-        renderTrain(); renderHand();
-        updateScoreboard();
-        lastPlay.textContent = 'New round started';
-
-        // If starter owns highest double and is player, show tooltip
-        if(roundFirstMove && highestDoubleTile && highestDoubleOwner === PLAYER && currentTurn === PLAYER){
-          showHintTooltip(`يجب عليك البدء بأعلى دبل لديك: ${highestDoubleTile.a}-${highestDoubleTile.b}`);
+      // Create tile DOM element (visual only)
+      createTileElement(tile, isHand = false) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'tile';
+        wrapper.setAttribute('role', 'button');
+        wrapper.setAttribute('aria-label', `Tile ${tile.a} and ${tile.b}`);
+        // left half
+        const left = document.createElement('div');
+        left.className = 'half pips-' + tile.a;
+        for (let i = 0; i < this.getPipCount(tile.a); i++) {
+          const p = document.createElement('div');
+          p.className = 'pip';
+          left.appendChild(p);
         }
-
-        if(currentTurn === AI){
-          setTimeout(aiTurn, 700);
+        // divider
+        const div = document.createElement('div');
+        div.className = 'divider';
+        // right half
+        const right = document.createElement('div');
+        right.className = 'half pips-' + tile.b;
+        for (let i = 0; i < this.getPipCount(tile.b); i++) {
+          const p = document.createElement('div');
+          p.className = 'pip';
+          right.appendChild(p);
         }
+        wrapper.appendChild(left);
+        wrapper.appendChild(div);
+        wrapper.appendChild(right);
+        return wrapper;
       }
 
-      function updateTurnIndicator(){ turnIndicator.textContent = currentTurn === PLAYER ? 'Your turn' : 'AI turn'; statusText.textContent = `Round ${round} • ${currentTurn === PLAYER ? 'Make a move' : 'AI is thinking'}`; }
+      getPipCount(n) { return n === 0 ? 1 : n; }
 
-      function flashStatus(msg){ statusText.textContent = msg; setTimeout(()=> { statusText.textContent = `${currentTurn === PLAYER ? 'Your turn' : 'AI turn'}`; }, 1600); }
-
-      resetMatchBtn.addEventListener('click', ()=>{ if(confirm('Reset match and scores?')) initMatch(); });
-
-      boneStackEl.addEventListener('click', ()=>{
-        if(animLock) return;
-        if(currentTurn !== PLAYER) return;
-        if(boneyard.length === 0){ flashStatus('Boneyard empty'); return; }
-        drawFromBoneyard(PLAYER);
-        setTimeout(()=>{
-          const playable = getPlayableTiles(hands.player);
-          if(playable.length === 0){
-            if(boneyard.length === 0){ currentTurn = AI; updateTurnIndicator(); setTimeout(aiTurn, 600); }
-            else flashStatus('No playable tiles — draw again or pass');
-          } else flashStatus('You drew a playable tile');
-        }, 200);
-      });
-
-      function showMatchVictory(winner){
-        startConfetti();
-        modalRoot.innerHTML=''; const modal=document.createElement('div'); modal.className='modal';
-        modal.innerHTML = `
-          <div class="modal-card">
-            <h2>${winner===PLAYER ? 'Champion — You!' : 'Champion — AI'}</h2>
-            <p class="muted">Match finished — final score</p>
-            <div style="font-size:20px; font-weight:900; margin:8px 0; color:var(--accent);">
-              You: ${scores.player} • AI: ${scores.ai}
-            </div>
-            <div style="display:flex; gap:12px; justify-content:center; margin-top:12px;">
-              <button id="play-again" class="btn primary">Play Again</button>
-              <button id="close-match" class="btn">Close</button>
-            </div>
-          </div>
-        `;
-        modalRoot.appendChild(modal); modalRoot.style.display='block';
-        $('#play-again').addEventListener('click', ()=>{ stopConfetti(); modalRoot.style.display='none'; modalRoot.innerHTML=''; initMatch(); });
-        $('#close-match').addEventListener('click', ()=>{ stopConfetti(); modalRoot.style.display='none'; modalRoot.innerHTML=''; });
+      // Update boneyard count
+      updateBoneyardCount(count) {
+        this.boneyardCount.textContent = count;
       }
 
-      // Confetti (same as before)
-      let confettiCtx=null, confettiPieces=[], confettiAnim=null;
-      function startConfetti(){
-        confettiCanvas.style.display='block';
-        confettiCanvas.width = window.innerWidth; confettiCanvas.height = window.innerHeight;
-        confettiCtx = confettiCanvas.getContext('2d'); confettiPieces=[];
-        const colors = ['#ffd166','#7ef9ff','#ff7ab6','#9bffb8','#ffd1a9'];
-        for(let i=0;i<120;i++){
-          confettiPieces.push({ x: Math.random()*confettiCanvas.width, y: Math.random()*confettiCanvas.height - confettiCanvas.height, w: 6 + Math.random()*10, h: 6 + Math.random()*10, vx: -2 + Math.random()*4, vy: 2 + Math.random()*6, r: Math.random()*360, vr: -6 + Math.random()*12, color: colors[Math.floor(Math.random()*colors.length)], opacity: 0.8 + Math.random()*0.2 });
-        }
-        (function loop(){ confettiCtx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); confettiPieces.forEach(p=>{ p.x += p.vx; p.y += p.vy; p.r += p.vr; confettiCtx.save(); confettiCtx.translate(p.x,p.y); confettiCtx.rotate(p.r * Math.PI/180); confettiCtx.fillStyle = p.color; confettiCtx.globalAlpha = p.opacity; confettiCtx.fillRect(-p.w/2, -p.h/2, p.w, p.h); confettiCtx.restore(); if(p.y > confettiCanvas.height + 40){ p.y = -40; p.x = Math.random()*confettiCanvas.width; } }); confettiAnim = requestAnimationFrame(loop); })();
-        setTimeout(stopConfetti, 6000);
+      // Update scoreboard
+      updateScoreboard(scores, round) {
+        this.playerScoreEl.textContent = scores.player;
+        this.aiScoreEl.textContent = scores.ai;
+        this.roundNumberEl.textContent = round;
       }
-      function stopConfetti(){ if(confettiAnim) cancelAnimationFrame(confettiAnim); confettiCanvas.style.display='none'; }
+
+      // Update status text
+      updateStatus(text) {
+        this.statusEl.textContent = text;
+      }
+
+      // Announce to live region
+      announce(text) {
+        this.liveAnnouncer.textContent = text;
+        setTimeout(() => { this.liveAnnouncer.textContent = ''; }, 1600);
+      }
 
       // Scroll train to show new tile
-      function scrollTrainToEnd(side){
-        // boardWrap contains train; we want to scroll train horizontally to show the new tile
-        // If placed on right -> scroll to max scrollLeft; if left -> scroll to 0
-        try{
-          const container = trainEl; // trainEl has overflow-x:auto
-          if(side === 'right'){
+      scrollTrainToEnd(side = 'right') {
+        try {
+          const container = this.trainWrap;
+          if (side === 'right') {
             container.scrollTo({ left: container.scrollWidth, behavior: 'smooth' });
           } else {
             container.scrollTo({ left: 0, behavior: 'smooth' });
           }
-        }catch(e){ /* ignore */ }
+        } catch (e) { /* ignore */ }
+      }
+
+      // Show placement hints (left/right)
+      showPlacementHints(canLeft, canRight) {
+        if (canLeft) this.hintLeft.classList.add('show'); else this.hintLeft.classList.remove('show');
+        if (canRight) this.hintRight.classList.add('show'); else this.hintRight.classList.remove('show');
+      }
+
+      hidePlacementHints() {
+        this.hintLeft.classList.remove('show');
+        this.hintRight.classList.remove('show');
       }
 
       // Tooltip for first-move rule
-      let tooltipTimer = null;
-      function showHintTooltip(msg, duration=3000){
-        firstMoveTooltip.textContent = msg;
-        firstMoveTooltip.classList.add('show');
-        firstMoveTooltip.setAttribute('aria-hidden','false');
-        if(tooltipTimer) clearTimeout(tooltipTimer);
-        tooltipTimer = setTimeout(()=>{ firstMoveTooltip.classList.remove('show'); firstMoveTooltip.setAttribute('aria-hidden','true'); }, duration);
+      showTooltip(msg, duration = 3000) {
+        const tip = document.createElement('div');
+        tip.className = 'modal-backdrop';
+        tip.innerHTML = `<div class="modal center" style="padding:10px; max-width:420px;"><div style="color:var(--muted)">${msg}</div></div>`;
+        document.body.appendChild(tip);
+        setTimeout(() => { tip.remove(); }, duration);
       }
 
-      // Observer to update playable highlights and auto-pass
-      const observer = new MutationObserver(()=> {
-        $$('.hand .domino').forEach(el=>{
-          const idx = parseInt(el.dataset.index,10);
-          const tile = hands.player[idx];
-          if(tile && isTilePlayable(tile, PLAYER)) el.classList.add('playable'); else el.classList.remove('playable');
+      // Round modal
+      showRoundModal(winner, points, reason, scores) {
+        this.modalRoot.innerHTML = '';
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop';
+        const card = document.createElement('div');
+        card.className = 'modal';
+        const title = winner ? (winner === 'player' ? 'فائز الجولة — أنت' : 'فائز الجولة — AI') : 'نتيجة الجولة';
+        const reasonText = reason === 'domino' ? 'أفرغ اليد' : (reason === 'blocked' ? 'اللعبة أغلقت' : 'تعادل في الإغلاق');
+        card.innerHTML = `
+          <h2 style="color:var(--accent-gold); margin:0 0 8px 0;">${title}</h2>
+          <div class="muted" style="margin-bottom:12px;">${reasonText}</div>
+          <div style="font-weight:800; font-size:18px; margin-bottom:12px;">${points > 0 ? `نقاط مكتسبة: ${points}` : 'لا نقاط'}</div>
+          <div style="margin-bottom:12px; color:var(--muted);">المجموع — أنت: <strong>${scores.player}</strong> • AI: <strong>${scores.ai}</strong></div>
+          <div style="display:flex; gap:10px; justify-content:center;">
+            <button id="next-round" class="btn primary">الجولة التالية</button>
+            <button id="close-modal" class="btn">إغلاق</button>
+          </div>
+        `;
+        backdrop.appendChild(card);
+        this.modalRoot.appendChild(backdrop);
+        this.modalRoot.setAttribute('aria-hidden', 'false');
+
+        // Handlers
+        $('#next-round').addEventListener('click', () => {
+          backdrop.remove();
+          this.modalRoot.innerHTML = '';
+          this.modalRoot.setAttribute('aria-hidden', 'true');
+          // Start next round via engine (UI doesn't hold engine ref; engine will attach handler)
+          document.dispatchEvent(new CustomEvent('nextRound'));
         });
-        if(currentTurn === PLAYER && !animLock){
-          const playable = getPlayableTiles(hands.player);
-          if(playable.length === 0 && boneyard.length === 0){
-            flashStatus('No playable tiles — passing to AI');
-            currentTurn = AI; updateTurnIndicator(); setTimeout(aiTurn, 600);
-          }
-        }
-      });
-      observer.observe(playerHandEl, { childList:true, subtree:true });
-
-      // Keyboard draw shortcut
-      window.addEventListener('keydown', (e)=>{ if(e.key==='d' || e.key==='D'){ if(currentTurn===PLAYER && !animLock) drawFromBoneyard(PLAYER); } });
-
-      function updateScoreboard(){ playerScoreEl.textContent = scores.player; aiScoreEl.textContent = scores.ai; roundNumberEl.textContent = round; }
-
-      function flashLastPlay(msg){ lastPlay.textContent = msg; setTimeout(()=> lastPlay.textContent = '—', 2200); }
-
-      // Initialize match
-      function initMatch(){
-        scores = { player:0, ai:0 }; round = 1; roundStarter = null; roundWinner = null; updateScoreboard(); startRound(true);
+        $('#close-modal').addEventListener('click', () => {
+          backdrop.remove();
+          this.modalRoot.innerHTML = '';
+          this.modalRoot.setAttribute('aria-hidden', 'true');
+        });
       }
 
-      // Start
-      initMatch();
+      // Match victory modal with confetti
+      showMatchVictory(champion, scores) {
+        this.modalRoot.innerHTML = '';
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop';
+        const card = document.createElement('div');
+        card.className = 'modal';
+        const title = champion === 'player' ? 'البطل — أنت!' : 'البطل — AI';
+        card.innerHTML = `
+          <h2 style="color:var(--accent-gold); margin:0 0 8px 0;">${title}</h2>
+          <div class="muted" style="margin-bottom:12px;">انتهت المباراة</div>
+          <div style="font-weight:900; font-size:20px; margin-bottom:12px; color:var(--accent-gold);">أنت: ${scores.player} • AI: ${scores.ai}</div>
+          <div style="display:flex; gap:10px; justify-content:center;">
+            <button id="play-again" class="btn primary">العب مرة أخرى</button>
+            <button id="close-match" class="btn">إغلاق</button>
+          </div>
+        `;
+        backdrop.appendChild(card);
+        this.modalRoot.appendChild(backdrop);
+        this.modalRoot.setAttribute('aria-hidden', 'false');
 
-      // Expose debug
-      window.__dominoes = { getState: ()=> ({ round, scores, hands, boneyard, train, currentTurn, highestDoubleTile, highestDoubleOwner }), restart: initMatch };
+        // Start confetti
+        this.startConfetti();
 
-      // Resize confetti canvas
-      window.addEventListener('resize', ()=>{ if(confettiCanvas.style.display !== 'none'){ confettiCanvas.width = window.innerWidth; confettiCanvas.height = window.innerHeight; } });
+        $('#play-again').addEventListener('click', () => {
+          this.stopConfetti();
+          backdrop.remove();
+          this.modalRoot.innerHTML = '';
+          this.modalRoot.setAttribute('aria-hidden', 'true');
+          document.dispatchEvent(new CustomEvent('playAgain'));
+        });
+        $('#close-match').addEventListener('click', () => {
+          this.stopConfetti();
+          backdrop.remove();
+          this.modalRoot.innerHTML = '';
+          this.modalRoot.setAttribute('aria-hidden', 'true');
+        });
+      }
 
-    })();
+      /* -------------------------
+         Confetti (canvas) - lightweight & performant
+         ------------------------- */
+      startConfetti() {
+        const canvas = this.confettiCanvas;
+        canvas.style.display = 'block';
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const ctx = canvas.getContext('2d');
+        const pieces = [];
+        const colors = ['#ffd166', '#7ef9ff', '#ff7ab6', '#9bffb8', '#ffd1a9'];
+        for (let i = 0; i < 80; i++) {
+          pieces.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * -canvas.height,
+            w: 6 + Math.random() * 10,
+            h: 6 + Math.random() * 10,
+            vx: -2 + Math.random() * 4,
+            vy: 2 + Math.random() * 6,
+            r: Math.random() * 360,
+            vr: -6 + Math.random() * 12,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            opacity: 0.8 + Math.random() * 0.2
+          });
+        }
+        let raf;
+        const loop = () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          pieces.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.r += p.vr;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.r * Math.PI / 180);
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.opacity;
+            ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+            ctx.restore();
+            if (p.y > canvas.height + 40) {
+              p.y = -40;
+              p.x = Math.random() * canvas.width;
+            }
+          });
+          raf = requestAnimationFrame(loop);
+        };
+        loop();
+        // stop after 6s
+        setTimeout(() => {
+          cancelAnimationFrame(raf);
+          canvas.style.display = 'none';
+        }, 6000);
+      }
+
+      stopConfetti() {
+        const canvas = this.confettiCanvas;
+        canvas.style.display = 'none';
+      }
+    }
+
+    /* =========================
+       Wiring: instantiate UI & Engine, attach handlers
+       ========================= */
+    const ui = new UI();
+    const engine = new GameEngine(ui);
+
+    // Attach UI callbacks to engine methods
+    ui.onTileClick = async (tile) => {
+      // Player attempts to play tile
+      if (engine.sm.phase !== 'playing' || engine.sm.turn !== 'player') {
+        ui.announce('ليس دورك الآن');
+        return;
+      }
+      // Validate playable
+      if (!engine.isTilePlayable(tile, 'player')) {
+        // If first-move highest double rule applies, show tooltip
+        if (engine.state.roundFirstMove && engine.state.highestDouble && engine.state.highestDouble.owner === 'player') {
+          ui.showTooltip(`يجب أن تبدأ بأعلى دبل لديك: ${engine.state.highestDouble.tile.id}`);
+          return;
+        }
+        ui.announce('القطعة غير قابلة لللعب');
+        return;
+      }
+
+      // Determine side automatically: prefer right if both valid
+      let side = 'right';
+      if (engine.state.train.length > 0) {
+        const leftEnd = engine.state.train[0].a;
+        const rightEnd = engine.state.train[engine.state.train.length - 1].b;
+        const canLeft = tile.a === leftEnd || tile.b === leftEnd;
+        const canRight = tile.a === rightEnd || tile.b === rightEnd;
+        if (canLeft && !canRight) side = 'left';
+        else if (canRight && !canLeft) side = 'right';
+        else side = 'right';
+      }
+
+      await engine.placeTile(tile, 'player', side);
+    };
+
+    ui.onDraw = () => {
+      if (engine.sm.phase !== 'playing' || engine.sm.turn !== 'player') {
+        ui.announce('لا يمكنك السحب الآن');
+        return;
+      }
+      if (engine.state.boneyard.length === 0) {
+        ui.announce('البونيارد فارغ');
+        return;
+      }
+      const tile = engine.draw('player');
+      ui.renderHand(engine.state.hands.player);
+      // If drawn tile is playable, highlight
+      const playable = engine.isTilePlayable(tile, 'player');
+      if (playable) ui.announce('سحبت قطعة قابلة للعب');
+      else ui.announce('سحبت قطعة غير قابلة للعب');
+    };
+
+    ui.onEndTurn = () => {
+      engine.endPlayerTurn();
+    };
+
+    ui.onResetMatch = () => {
+      engine.resetMatch();
+    };
+
+    ui.onAIModeChange = (mode) => {
+      engine.setAIMode(mode);
+      ui.announce(`AI mode: ${mode}`);
+    };
+
+    // Listen for custom events from UI modals
+    document.addEventListener('nextRound', () => {
+      // increment round and start next round with previous winner as starter
+      engine.state.round++;
+      engine.startRound(false, engine.state.scores.player > engine.state.scores.ai ? 'player' : 'ai');
+    });
+    document.addEventListener('playAgain', () => {
+      engine.startMatch();
+    });
+
+    // Start initial match
+    engine.startMatch();
+
+    // Expose for debugging (dev only)
+    window.__Dominoes = { engine, ui, Tile };
+
+    /* =========================
+       Accessibility & keyboard shortcuts
+       - 'd' to draw, 'e' to end turn, 'r' to reset
+       ========================= */
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'd' || e.key === 'D') ui.onDraw();
+      if (e.key === 'e' || e.key === 'E') ui.onEndTurn();
+      if (e.key === 'r' || e.key === 'R') {
+        if (confirm('إعادة المباراة؟')) ui.onResetMatch();
+      }
+    });
+
+    /* =========================
+       Final notes:
+       - All animations use transform/opacity to remain performant.
+       - Game logic is centralized in GameEngine; UI only renders and forwards user actions.
+       - AI is pure logic and can be moved to a Web Worker for heavy computation.
+       - To extend: persist match state, add multiplayer via WebSocket, add sound FX.
+       ========================= */
+  })();
   </script>
 </body>
-  </html>
+                      </html>

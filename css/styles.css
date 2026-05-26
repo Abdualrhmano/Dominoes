@@ -1,57 +1,32 @@
-/* css/styles.css
-   Dominoes — وردتي Edition
-   نسخة معدّلة: بلاطات بيضاء ونقاط سوداء، تحسين تباين، وحماية حالات التحميل البطيء.
-   احفظ هذا الملف كـ css/styles.css واستبدل النسخة الحالية.
-*/
-
-/* =========================
-   Design Tokens
-   ========================= */
 :root{
-  --bg-900: #071018;
-  --bg-800: #0b1220;
-  --muted: #6f7b86;
-  --accent-gold: #ffd166;
-  --accent-cyan: #00a6c7;
-  --tile-white: #ffffff;
-  --tile-shadow: rgba(2,6,12,0.12);
-
-  --radius-lg: 14px;
-  --radius-md: 10px;
-
-  --motion-fast: 160ms;
-  --motion-medium: 360ms;
-  --easing: cubic-bezier(.2,.9,.3,1);
-
-  --max-width: 1200px;
+  --bg-900:#071018;
+  --bg-800:#0b1220;
+  --muted:#6f7b86;
+  --accent-gold:#ffd166;
+  --accent-cyan:#00a6c7;
+  --tile-white:#ffffff;
+  --tile-shadow:rgba(2,6,12,0.12);
+  --radius-lg:14px;
+  --radius-md:10px;
+  --motion-fast:160ms;
+  --motion-medium:360ms;
+  --easing:cubic-bezier(.2,.9,.3,1);
+  --max-width:1200px;
 }
 
-/* =========================
-   Base / Reset
-   ========================= */
-*{ box-sizing:border-box; }
-html,body{ height:100%; margin:0; font-family:Inter, system-ui, "Segoe UI", Arial; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+/* Reset */
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Inter,system-ui,"Segoe UI",Arial; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
   background:
     radial-gradient(900px 400px at 10% 10%, rgba(14,18,24,0.6), transparent),
     linear-gradient(180deg,var(--bg-900), #041018 140%);
   color:#0b1220;
 }
 
-/* =========================
-   App container
-   ========================= */
-.app {
-  max-width:var(--max-width);
-  margin:28px auto;
-  padding:18px;
-  display:flex;
-  flex-direction:column;
-  gap:18px;
-}
+/* App container */
+.app, .landing-inner { max-width:var(--max-width); margin:28px auto; padding:18px; display:flex; flex-direction:column; gap:18px; }
 
-/* =========================
-   Glass panels (header/footer/board)
-   ========================= */
+/* Panels */
 .panel {
   background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
   border-radius: var(--radius-lg);
@@ -61,9 +36,7 @@ html,body{ height:100%; margin:0; font-family:Inter, system-ui, "Segoe UI", Aria
   padding:12px;
 }
 
-/* =========================
-   Header / Scoreboard
-   ========================= */
+/* Header / Scoreboard */
 .header { display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--tile-white); }
 .score { display:flex; gap:12px; align-items:center; }
 .score-card {
@@ -78,15 +51,13 @@ html,body{ height:100%; margin:0; font-family:Inter, system-ui, "Segoe UI", Aria
 .score-card h4{ margin:0; color:var(--accent-gold); font-size:13px; letter-spacing:0.6px; }
 .score-card p{ margin:6px 0 0 0; font-weight:800; font-size:20px; }
 
-/* Header controls */
+/* Controls */
 .controls { display:flex; gap:10px; align-items:center; }
 
-/* =========================
-   Board & Train
-   ========================= */
+/* Board */
 .board { position:relative; min-height:380px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
 
-/* train-wrap: single-line horizontal, smooth scroll */
+/* Train */
 .train-wrap {
   width:100%;
   padding:12px;
@@ -103,12 +74,12 @@ html,body{ height:100%; margin:0; font-family:Inter, system-ui, "Segoe UI", Aria
 .train-wrap::-webkit-scrollbar{ height:8px; }
 .train-wrap::-webkit-scrollbar-thumb{ background: rgba(0,0,0,0.12); border-radius:8px; }
 
-/* placement hints */
+/* Placement hints */
 .placement-hints { position:absolute; top:50%; transform:translateY(-50%); left:12px; display:flex; gap:8px; z-index:30; pointer-events:none; }
 .hint-dot { width:12px; height:12px; border-radius:50%; background: linear-gradient(180deg,var(--accent-cyan), #00d4ff); box-shadow: 0 8px 20px rgba(0,166,199,0.08); opacity:0; transform:scale(0.6); transition: all var(--motion-fast) var(--easing); }
 .hint-dot.show{ opacity:1; transform:scale(1); }
 
-/* boneyard */
+/* Boneyard */
 .boneyard { position:absolute; top:12px; right:12px; display:flex; gap:8px; align-items:center; z-index:40; }
 .bone-stack {
   width:72px; height:44px; border-radius:10px;
@@ -121,9 +92,7 @@ html,body{ height:100%; margin:0; font-family:Inter, system-ui, "Segoe UI", Aria
 }
 .bone-stack:active{ transform: translateY(2px); }
 
-/* =========================
-   Domino tile visuals (WHITE tile, BLACK pips)
-   ========================= */
+/* Tile visuals: white tile, black pips */
 .tile {
   display:inline-flex;
   width:92px;
@@ -156,21 +125,11 @@ html,body{ height:100%; margin:0; font-family:Inter, system-ui, "Segoe UI", Aria
 /* playable highlight */
 .tile.playable { box-shadow: 0 22px 70px rgba(0,0,0,0.12); transform: translateY(-10px) scale(1.04); border:1px solid rgba(0,0,0,0.08); }
 
-/* small screens */
-@media (max-width:640px){
-  .tile{ width:72px; height:40px; padding:6px; border-radius:8px; }
-  .bone-stack{ width:60px; height:36px; }
-}
-
-/* =========================
-   Footer / Player hand
-   ========================= */
+/* Footer / Player hand */
 .footer { display:flex; align-items:center; justify-content:space-between; gap:12px; color:#fff; }
 .hand { display:flex; gap:10px; align-items:center; justify-content:center; overflow:auto; padding:8px; border-radius:10px; background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.96)); border:1px solid rgba(0,0,0,0.06); }
 
-/* =========================
-   Modal
-   ========================= */
+/* Modal */
 .modal-backdrop { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background: linear-gradient(180deg, rgba(2,6,12,0.6), rgba(2,6,12,0.85)); z-index:60; backdrop-filter: blur(8px) saturate(120%); }
 .modal { width:min(720px, 92%); padding:20px; border-radius:var(--radius-lg); background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.96)); border:1px solid rgba(0,0,0,0.06); box-shadow: 0 30px 80px rgba(0,0,0,0.12); transform: translateY(8px); transition: transform var(--motion-medium) var(--easing), opacity var(--motion-medium) var(--easing); color:#071018; }
 
@@ -179,12 +138,12 @@ html,body{ height:100%; margin:0; font-family:Inter, system-ui, "Segoe UI", Aria
 .btn:active { transform: translateY(1px) scale(0.998); }
 .btn.primary { background: linear-gradient(180deg, var(--accent-gold), #ffd9a6); color:#071018; border:1px solid rgba(0,0,0,0.06); }
 
-/* small helpers */
+/* Helpers */
 .muted { color:var(--muted); font-size:13px; }
 .center { display:flex; align-items:center; justify-content:center; }
 .sr-only { position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; }
 
-/* Performance: snap animation (transform only) */
+/* Animations */
 .anim-snap { animation: snap var(--motion-medium) var(--easing) both; }
 @keyframes snap {
   0%{ transform: scale(0.6) rotate(-8deg); opacity:0; }
@@ -192,9 +151,35 @@ html,body{ height:100%; margin:0; font-family:Inter, system-ui, "Segoe UI", Aria
   100%{ transform: scale(1) rotate(0deg); opacity:1; }
 }
 
-/* Responsive tweaks */
+/* Landing page styles */
+.landing { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:40px 18px; }
+.landing-inner { display:flex; flex-direction:column; gap:18px; width:100%; }
+.hero { display:flex; gap:20px; align-items:flex-start; justify-content:space-between; }
+.hero-left { flex:1; color:var(--tile-white); }
+.brand { font-size:28px; margin:0 0 8px 0; color:var(--accent-cyan); }
+.tagline { margin:0 0 16px 0; color:var(--muted); }
+.cta-row { display:flex; gap:10px; margin:12px 0; }
+.features { margin:12px 0 0 0; padding-left:18px; color:var(--muted); }
+.controls-compact { margin-top:14px; display:flex; gap:8px; flex-wrap:wrap; }
+
+/* Hero right */
+.hero-right { width:420px; display:flex; flex-direction:column; gap:8px; align-items:center; }
+.animated-canvas { width:100%; border-radius:12px; overflow:hidden; border:1px solid rgba(255,255,255,0.04); box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
+
+/* Preview */
+.preview { display:flex; gap:18px; margin-top:18px; }
+.preview-left, .preview-right { flex:1; }
+.mini-board { height:140px; border-radius:10px; background: linear-gradient(180deg,#ffffff,#f7f7f7); border:1px solid rgba(0,0,0,0.06); display:flex; align-items:center; justify-content:center; color:#071018; }
+
+/* Responsive */
 @media (max-width:900px) {
-  .app { padding:12px; }
-  .header { flex-direction:column; align-items:flex-start; gap:10px; }
-  .controls { align-self:flex-end; }
-   }
+  .hero { flex-direction:column; align-items:center; }
+  .hero-right { width:100%; }
+  .app, .landing-inner { padding:12px; }
+}
+
+/* Small screens tile size */
+@media (max-width:640px){
+  .tile{ width:72px; height:40px; padding:6px; border-radius:8px; }
+  .bone-stack{ width:60px; height:36px; }
+                   }

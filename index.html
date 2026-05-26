@@ -7,8 +7,73 @@
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-  <div class="app" id="app">
-    <!-- Header -->
+  <div class="landing" id="landing">
+    <div class="landing-inner">
+      <div class="hero">
+        <div class="hero-left">
+          <h1 class="brand">وردتي — دومينو كلاسيكي</h1>
+          <p class="tagline">لعب، تعلّم، وتحدى ذكاءً اصطناعياً يتطوّر داخل المتصفح</p>
+
+          <div class="cta-row">
+            <button id="start-game" class="btn primary">ابدأ اللعب الآن</button>
+            <button id="open-demo" class="btn">عرض سريع</button>
+          </div>
+
+          <ul class="features">
+            <li>نموذج AI مدمج يتعلّم من كل جولة</li>
+            <li>نسخة كلاسيكية من لعبة الدومينو مع قواعد رسمية</li>
+            <li>حفظ النموذج محلياً؛ لا رفع أو تحميل خارجي</li>
+            <li>خيارات: سهل، صعب، متعلّم</li>
+          </ul>
+
+          <div class="controls-compact">
+            <button id="export-model" class="btn">تصدير النموذج</button>
+            <button id="import-model" class="btn">استيراد نموذج</button>
+            <button id="reset-model" class="btn">إعادة تهيئة النموذج</button>
+          </div>
+        </div>
+
+        <div class="hero-right">
+          <div class="animated-canvas" id="animated-canvas" aria-hidden="true">
+            <!-- Canvas-based animated domino art -->
+            <canvas id="hero-canvas" width="720" height="480"></canvas>
+          </div>
+          <div class="hero-caption muted">تصميم عصري، تجربة كلاسيكية</div>
+        </div>
+      </div>
+
+      <div class="preview" id="preview">
+        <div class="preview-left panel">
+          <h3>لوحة اللعبة</h3>
+          <div class="mini-board" id="mini-board" aria-hidden="true">
+            <!-- Static preview of board; actual game opens after الضغط -->
+            <div class="mini-train" id="mini-train"></div>
+          </div>
+        </div>
+
+        <div class="preview-right panel">
+          <h3>التحكم السريع</h3>
+          <div class="muted">اختر وضع الذكاء الاصطناعي</div>
+          <select id="ai-mode-landing" class="btn">
+            <option value="easy">سهل</option>
+            <option value="hard">صعب</option>
+            <option value="learned" selected>متعلّم</option>
+          </select>
+
+          <div style="margin-top:12px;">
+            <button id="go-to-game" class="btn primary">فتح اللعبة</button>
+            <button id="demo-play" class="btn">تشغيل محاكاة قصيرة</button>
+          </div>
+        </div>
+      </div>
+
+      <footer class="landing-footer muted">
+        © <span id="year"></span> وردتي — لعبة دومينو تعليمية تعمل بالكامل محلياً
+      </footer>
+    </div>
+  </div>
+
+  <div class="app" id="app" hidden>
     <header class="panel header" role="banner" aria-label="Scoreboard">
       <div class="score" aria-hidden="false">
         <div class="score-card" aria-live="polite">
@@ -32,7 +97,6 @@
           <option value="learned" selected>وردتي: متعلّم</option>
         </select>
 
-        <!-- Sync model button: يتيح مزامنة نموذج وردتي مع عامل الـ Web Worker يدوياً -->
         <button id="sync-model" class="btn" title="مزامنة نموذج وردتي" aria-label="مزامنة نموذج وردتي">مزامنة نموذج وردتي</button>
 
         <button id="reset-match" class="btn">إعادة المباراة</button>
@@ -40,7 +104,6 @@
       </div>
     </header>
 
-    <!-- Board -->
     <main class="panel board" role="main" aria-label="Game board">
       <div class="placement-hints" id="placement-hints" aria-hidden="true">
         <div class="hint-dot" id="hint-left"></div>
@@ -52,18 +115,13 @@
         <div class="muted" id="boneyard-count">28</div>
       </div>
 
-      <div class="train-wrap" id="train-wrap" role="list" aria-label="Domino train">
-        <!-- Tiles injected by JS -->
-      </div>
+      <div class="train-wrap" id="train-wrap" role="list" aria-label="Domino train"></div>
 
       <div class="sr-only" id="live-announcer" aria-live="polite"></div>
     </main>
 
-    <!-- Footer / Player hand -->
     <footer class="panel footer" role="contentinfo">
-      <div class="hand" id="player-hand" aria-label="Player hand">
-        <!-- Player tiles injected by JS -->
-      </div>
+      <div class="hand" id="player-hand" aria-label="Player hand"></div>
 
       <div style="display:flex; gap:8px; align-items:center;">
         <button id="draw-btn" class="btn">سحب</button>
@@ -71,14 +129,101 @@
       </div>
     </footer>
 
-    <!-- Modal root -->
     <div id="modal-root" aria-hidden="true"></div>
-
-    <!-- Confetti canvas -->
     <canvas id="confetti" style="position:fixed; inset:0; pointer-events:none; z-index:80; display:none;"></canvas>
   </div>
 
-  <!-- Main module -->
   <script type="module" src="js/main.js"></script>
+  <script>
+    // Landing page small boot script (no heavy logic)
+    document.getElementById('year').textContent = new Date().getFullYear();
+    const startBtn = document.getElementById('start-game');
+    const goBtn = document.getElementById('go-to-game');
+    const app = document.getElementById('app');
+    const landing = document.getElementById('landing');
+
+    function openGame() {
+      landing.hidden = true;
+      app.hidden = false;
+      // dispatch event for main.js to initialize UI
+      window.dispatchEvent(new Event('openGame'));
+    }
+
+    startBtn.addEventListener('click', openGame);
+    goBtn.addEventListener('click', openGame);
+
+    // Demo canvas animation bootstrap (lightweight)
+    (function initHeroCanvas() {
+      const canvas = document.getElementById('hero-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width, h = canvas.height;
+      let t = 0;
+
+      function draw() {
+        ctx.clearRect(0,0,w,h);
+        // background gradient
+        const g = ctx.createLinearGradient(0,0,w,h);
+        g.addColorStop(0,'#071018');
+        g.addColorStop(1,'#0b1220');
+        ctx.fillStyle = g;
+        ctx.fillRect(0,0,w,h);
+
+        // floating dominoes
+        const centerX = w/2, centerY = h/2;
+        for (let i=0;i<8;i++) {
+          const phase = t*0.002 + i*0.6;
+          const x = centerX + Math.cos(phase) * (120 + i*8);
+          const y = centerY + Math.sin(phase*1.3) * (30 + i*6);
+          const rot = Math.sin(phase*0.9) * 0.25;
+          drawDomino(ctx, x, y, 110, 56, rot, i);
+        }
+
+        t++;
+        requestAnimationFrame(draw);
+      }
+
+      function drawDomino(ctx, x, y, wD, hD, rot, idx) {
+        ctx.save();
+        ctx.translate(x,y);
+        ctx.rotate(rot);
+        // tile background
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+        roundRect(ctx, -wD/2, -hD/2, wD, hD, 10, true, true);
+        // divider
+        ctx.fillStyle = 'rgba(0,0,0,0.06)';
+        ctx.fillRect(-2, -hD/2 + 8, 4, hD - 16);
+        // pips (simple pattern)
+        ctx.fillStyle = '#0b0b0b';
+        const pip = 6;
+        for (let r=0;r<2;r++){
+          for (let c=0;c<3;c++){
+            const px = -wD/4 + c* (wD/6);
+            const py = (r===0) ? -hD/6 : hD/6;
+            ctx.beginPath();
+            ctx.arc(px, py, 5 - (idx%3), 0, Math.PI*2);
+            ctx.fill();
+          }
+        }
+        ctx.restore();
+      }
+
+      function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+        if (typeof r === 'undefined') r = 5;
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+        if (fill) ctx.fill();
+        if (stroke) ctx.stroke();
+      }
+
+      draw();
+    })();
+  </script>
 </body>
-</html>
+  </html>

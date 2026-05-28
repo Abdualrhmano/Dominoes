@@ -1,0 +1,149 @@
+/* ============================
+   styles.css
+   Skeuomorphic luxury dark theme for Dominoes
+   ============================ */
+
+/* Theme variables */
+:root{
+  --bg-dark-1: #050608;
+  --bg-dark-2: #0b0f12;
+  --felt-1: #072116;
+  --felt-2: #0b2a1f;
+  --ivory: #fbf7ef;
+  --pip-dark: #0b0b0b;
+  --metal-gold-1: #d4af37;
+  --metal-gold-2: #8b6b2f;
+  --muted: #9aa4b2;
+  --accent: #ffd166;
+  --card-shadow: 0 30px 90px rgba(0,0,0,0.75);
+  --ui-radius: 12px;
+  --tile-w: 96px;
+  --tile-h: 56px;
+  --tile-gap: 12px;
+  --transition-fast: 180ms cubic-bezier(.2,.9,.3,1);
+}
+
+/* Page */
+html,body{ height:100%; margin:0; background: linear-gradient(180deg,var(--bg-dark-1), var(--bg-dark-2)); font-family: Inter, system-ui, "Noto Naskh Arabic", Arial; color: #e6eef6; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+.app-wrap{ max-width:1280px; margin:28px auto; padding:22px; }
+
+/* Scoreboard */
+.scoreboard{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px; border-radius:14px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.03); box-shadow: var(--card-shadow); }
+.score-left, .score-right{ display:flex; gap:12px; align-items:center; }
+.score-card{ padding:12px 16px; border-radius:10px; background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00)); min-width:140px; text-align:center; border:1px solid rgba(255,255,255,0.02); }
+.score-card h4{ margin:0; color:var(--accent); font-weight:800; font-size:13px; }
+.score-card p{ margin:6px 0 0 0; font-weight:900; font-size:20px; color:#f6f7f8; }
+.round-number{ font-weight:800; font-size:18px; }
+
+/* Buttons */
+.btn{ background:transparent; border:1px solid rgba(255,255,255,0.04); padding:8px 12px; border-radius:10px; color:var(--ivory); font-weight:700; cursor:pointer; transition: transform var(--transition-fast), box-shadow var(--transition-fast); }
+.btn:active{ transform: translateY(1px) scale(0.998); }
+
+/* Board wrap and felt */
+.board-wrap{ margin-top:18px; border-radius:18px; padding:22px; position:relative; overflow:hidden; border:1px solid rgba(255,255,255,0.02); box-shadow: var(--card-shadow); background: linear-gradient(180deg,#0b0604 0%, #0b0705 100%); }
+.board-canvas{ position:relative; width:100%; height:420px; border-radius:12px; margin:0 auto; overflow:hidden; background: linear-gradient(180deg, var(--felt-1), var(--felt-2)); box-shadow: inset 0 6px 30px rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.02); }
+
+/* Felt grain overlay (subtle) */
+.board-canvas::after{
+  content:"";
+  position:absolute; inset:0; border-radius:12px; pointer-events:none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><defs><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='1' stitchTiles='stitch'/></filter></defs><rect width='100%' height='100%' filter='url(%23n)' opacity='0.02' fill='%23000000'/></svg>");
+  mix-blend-mode:overlay;
+  opacity:0.9;
+}
+
+/* Placement hints */
+.placement-hints{ position:absolute; top:12px; left:12px; display:flex; gap:8px; z-index:20; pointer-events:none; }
+.hint-dot{ width:12px; height:12px; border-radius:50%; background: linear-gradient(180deg,var(--accent), #ffd88a); box-shadow: 0 6px 18px rgba(255,209,102,0.12); opacity:0; transform:scale(.6); transition: all var(--transition-fast); }
+.hint-dot.show{ opacity:1; transform:scale(1); }
+
+/* Boneyard UI */
+.boneyard-ui{ position:absolute; right:18px; top:18px; display:flex; gap:8px; align-items:center; z-index:30; color:var(--muted); }
+.bone-stack{ width:72px; height:44px; border-radius:8px; background: linear-gradient(180deg,#0b1220,#071018); border:1px solid rgba(255,255,255,0.03); box-shadow: 0 8px 20px rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; color:var(--muted); font-weight:700; font-size:13px; cursor:pointer; user-select:none; }
+
+/* Hand area */
+.hand{ position:fixed; left:0; right:0; bottom:0; background: linear-gradient(180deg, rgba(2,6,12,0.6), rgba(2,6,12,0.85)); border-top:1px solid rgba(255,255,255,0.02); padding:14px 18px; display:flex; align-items:center; justify-content:center; gap:12px; z-index:40; }
+.hand-inner{ display:flex; gap:12px; align-items:center; justify-content:center; max-width:100%; overflow:auto; padding:6px; }
+
+/* Tile base style (ivory/resin tactile) */
+.tile {
+  width: var(--tile-w);
+  height: var(--tile-h);
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:8px;
+  gap:8px;
+  position:absolute; /* board tiles are absolutely positioned */
+  transform-origin:center;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), left 220ms linear, top 220ms linear;
+  background: linear-gradient(180deg, #fffdf6 0%, #f6f1e6 40%, #efe7d6 100%);
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow:
+    0 18px 40px rgba(2,6,12,0.6),
+    0 6px 18px rgba(2,6,12,0.45),
+    inset 0 2px 8px rgba(255,255,255,0.6),
+    inset 0 -8px 18px rgba(0,0,0,0.06);
+  color: var(--pip-dark);
+  user-select:none;
+  -webkit-user-select:none;
+  will-change: transform, left, top;
+}
+
+/* tile halves and divider */
+.tile .half{ flex:1; display:flex; align-items:center; justify-content:center; gap:6px; height:100%; }
+.tile .divider{
+  width:4px; height:80%; border-radius:4px; display:flex; align-items:center; justify-content:center;
+  background: linear-gradient(180deg, rgba(0,0,0,0.12), rgba(255,255,255,0.06));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+}
+
+/* metallic stud */
+.tile .stud{
+  width:10px; height:10px; border-radius:50%;
+  background: radial-gradient(circle at 30% 25%, #fff9e6 0%, var(--metal-gold-1) 20%, var(--metal-gold-2) 60%, #3b2a12 100%);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+/* pips: engraved look */
+.tile .pip{
+  width:10px; height:10px; border-radius:50%;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), rgba(255,255,255,0.6) 6%, rgba(0,0,0,0.05) 7%),
+    radial-gradient(circle at 50% 60%, rgba(0,0,0,0.6), rgba(0,0,0,0.4) 40%, rgba(0,0,0,0.2) 60%),
+    linear-gradient(180deg, rgba(0,0,0,0.05), rgba(0,0,0,0.12));
+  box-shadow:
+    inset 0 2px 6px rgba(255,255,255,0.08),
+    inset 0 -6px 10px rgba(0,0,0,0.45),
+    0 2px 6px rgba(0,0,0,0.25);
+  transform: translateZ(-2px);
+}
+
+/* playable highlight */
+.tile.playable{
+  transform: translateZ(12px) scale(1.04);
+  box-shadow: 0 40px 100px rgba(0,0,0,0.9), 0 0 24px rgba(126,249,255,0.04);
+  outline: 2px solid rgba(126,249,255,0.06);
+}
+
+/* dragging state */
+.tile.dragging{
+  transform: translateZ(20px) scale(1.08) rotate(-2deg);
+  box-shadow: 0 60px 140px rgba(0,0,0,0.95);
+  z-index:1200;
+}
+
+/* modal & tooltip */
+.hint-tooltip{ position:absolute; bottom:84px; left:50%; transform:translateX(-50%); background: rgba(10,14,20,0.92); border:1px solid rgba(255,255,255,0.04); padding:10px 14px; border-radius:10px; color:var(--muted); font-size:13px; z-index:60; box-shadow: 0 10px 30px rgba(0,0,0,0.6); opacity:0; transition: opacity var(--transition-fast); pointer-events:none; }
+.hint-tooltip.show{ opacity:1; pointer-events:auto; }
+
+/* confetti canvas */
+.confetti-canvas{ position:fixed; inset:0; pointer-events:none; z-index:90; display:none; }
+
+/* responsive */
+@media (max-width: 720px){
+  :root{ --tile-w:72px; --tile-h:44px; --tile-gap:8px; }
+  .board-canvas{ height:320px; }
+  .app-wrap{ padding:12px; }
+}

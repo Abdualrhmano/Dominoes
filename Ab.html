@@ -1,1092 +1,599 @@
-here<!doctype html>
+<!doctype html>
 <html lang="ar">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Dominoes — Wood Table Single File</title>
+  <title>Dominoes — Blue Pro — Single File</title>
 
   <style>
     :root{
-      --bg-dark-1:#0b0705;
-      --wood-1:#3b2a12;
-      --wood-2:#6b4a2a;
-      --felt-1:#0b2a1f;
+      --bg-1:#052233;
+      --bg-2:#0b3b57;
+      --panel:#072a3a;
+      --accent:#6fd3ff;
+      --muted:#9fb7c6;
       --ivory:#fbf7ef;
-      --pip-black:#0b0b0b;
-      --muted:#8f9aa6;
-      --accent:#ffd166;
+      --obsidian:#0b0b0d;
       --tile-w:96px;
       --tile-h:56px;
       --tile-gap:12px;
       --ui-radius:12px;
-      --card-shadow: 0 30px 90px rgba(0,0,0,0.75);
+      --shadow-strong: 0 30px 80px rgba(0,0,0,0.7);
+      --glass: rgba(255,255,255,0.03);
+      --fps-color: rgba(255,255,255,0.7);
     }
 
     /* Page */
-    html,body{ height:100%; margin:0; background: linear-gradient(180deg,var(--bg-dark-1), #070505); font-family: Inter, system-ui, "Noto Naskh Arabic", Arial; color:#efece6; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; direction: rtl; }
-    .app-wrap{ max-width:1280px; margin:28px auto; padding:18px; box-sizing:border-box; }
+    html,body{height:100%;margin:0;font-family:Inter, system-ui, "Noto Naskh Arabic", Arial; background: linear-gradient(180deg,var(--bg-1), var(--bg-2)); color:#eaf6ff; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; direction:rtl;}
+    .app{max-width:1280px;margin:18px auto;padding:14px;box-sizing:border-box;}
 
-    /* Scoreboard */
-    .scoreboard{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px; border-radius:14px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.03); box-shadow: var(--card-shadow); }
-    .score-left, .score-right{ display:flex; gap:12px; align-items:center; }
-    .score-card{ padding:10px 14px; border-radius:10px; background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00)); min-width:140px; text-align:center; border:1px solid rgba(255,255,255,0.02); }
-    .score-card h4{ margin:0; color:var(--accent); font-weight:800; font-size:13px; }
-    .score-card p{ margin:6px 0 0 0; font-weight:900; font-size:20px; color:#fff; }
-    .round-number{ font-weight:800; font-size:18px; }
+    /* Top bar */
+    header.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:var(--shadow-strong);border:1px solid rgba(255,255,255,0.03);}
+    .scores{display:flex;gap:12px;align-items:center;}
+    .score{min-width:140px;padding:10px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);text-align:center;border:1px solid rgba(255,255,255,0.02);}
+    .score h4{margin:0;color:var(--accent);font-size:13px;font-weight:800}
+    .score p{margin:6px 0 0 0;font-weight:900;font-size:20px;color:#fff}
 
-    /* Buttons */
-    .btn{ background:transparent; border:1px solid rgba(255,255,255,0.04); padding:8px 12px; border-radius:10px; color:var(--ivory); font-weight:700; cursor:pointer; transition: transform 160ms ease; }
-    .btn:active{ transform: translateY(1px) scale(0.998); }
+    .center-info{text-align:center;}
+    .controls{display:flex;gap:10px;align-items:center;}
 
-    /* Board wrap */
-    .board-wrap{ margin-top:18px; border-radius:18px; padding:18px; position:relative; overflow:hidden; border:1px solid rgba(255,255,255,0.02); box-shadow: var(--card-shadow); background: linear-gradient(180deg,#0b0604 0%, #0b0705 100%); min-height:520px; }
+    .btn{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px 12px;border-radius:10px;color:var(--ivory);font-weight:700;cursor:pointer;backdrop-filter: blur(4px);}
+    .btn:active{transform:translateY(1px)}
 
-    .board-wrap::before{
-      content:"";
-      position:absolute; inset:8px; border-radius:14px; pointer-events:none;
-      background:
-        linear-gradient(180deg, rgba(0,0,0,0.25), rgba(255,255,255,0.02)),
-        repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 6px);
-      mix-blend-mode:overlay;
-      box-shadow: inset 0 0 0 8px rgba(0,0,0,0.45);
-    }
+    /* Board area */
+    .board-wrap{margin-top:14px;border-radius:14px;padding:14px;position:relative;overflow:hidden;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));box-shadow:var(--shadow-strong);border:1px solid rgba(255,255,255,0.02);min-height:560px;}
+    .board-bg{position:absolute;inset:12px;border-radius:10px;background:
+      radial-gradient(800px 200px at 20% 10%, rgba(255,255,255,0.02), transparent 10%),
+      linear-gradient(180deg,#0b3b57,#063042);box-shadow:inset 0 8px 40px rgba(0,0,0,0.6);overflow:hidden;}
+    .board-bg::after{content:"";position:absolute;inset:0;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><defs><filter id='t'><feTurbulence baseFrequency='0.6' numOctaves='1' stitchTiles='stitch'/></filter></defs><rect width='100%' height='100%' filter='url(%23t)' opacity='0.02' fill='%23000000'/></svg>");mix-blend-mode:overlay;opacity:0.9}
+    #boardCanvas{position:relative;display:block;width:100%;height:420px;border-radius:10px;z-index:2}
 
-    /* Board canvas: polished walnut wood with inset felt playing area */
-    .board-canvas{
-      position:relative;
-      width:100%;
-      height:420px;
-      border-radius:12px;
-      margin:0 auto;
-      overflow:hidden;
-      background:
-        linear-gradient(180deg, #5a3f26 0%, #3b2a12 60%),
-        radial-gradient(800px 200px at 50% 10%, rgba(255,255,255,0.02), transparent 10%);
-      box-shadow: inset 0 6px 30px rgba(0,0,0,0.6);
-      border:1px solid rgba(255,255,255,0.02);
-    }
+    /* boneyard */
+    .boneyard{position:absolute;right:18px;top:18px;z-index:6;display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--muted)}
+    .boneyard .stack{width:84px;height:52px;border-radius:8px;background:linear-gradient(180deg,#0b2a3a,#04202b);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.03);cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,0.6);font-weight:800;color:var(--muted)}
 
-    .board-canvas::after{
-      content:"";
-      position:absolute; inset:0; border-radius:12px; pointer-events:none;
-      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400'><defs><filter id='g'><feTurbulence baseFrequency='0.02' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter></defs><rect width='100%' height='100%' filter='url(%23g)' opacity='0.06' fill='%23000000'/></svg>");
-      mix-blend-mode:overlay;
-      opacity:0.9;
-    }
+    /* hints */
+    .hint{position:absolute;left:18px;top:18px;z-index:6;color:var(--muted);font-size:13px}
 
-    /* Placement hints */
-    .placement-hints{ position:absolute; top:12px; left:12px; display:flex; gap:8px; z-index:20; pointer-events:none; }
-    .hint-dot{ width:12px; height:12px; border-radius:50%; background: linear-gradient(180deg,#ffd88a,#ffd166); box-shadow: 0 6px 18px rgba(255,209,102,0.12); opacity:0; transform:scale(.6); transition: all 180ms cubic-bezier(.2,.9,.3,1); }
-    .hint-dot.show{ opacity:1; transform:scale(1); }
+    /* hand */
+    .hand{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(180deg, rgba(2,6,12,0.6), rgba(2,6,12,0.85));border-top:1px solid rgba(255,255,255,0.02);padding:12px 18px;display:flex;align-items:center;justify-content:center;gap:12px;z-index:60}
+    .hand-inner{display:flex;gap:12px;align-items:center;justify-content:center;max-width:100%;overflow:auto;padding:6px}
 
-    /* Boneyard UI */
-    .boneyard-ui{ position:absolute; right:18px; top:18px; display:flex; gap:8px; align-items:center; z-index:30; color:var(--muted); }
-    .bone-stack{ width:72px; height:44px; border-radius:8px; background: linear-gradient(180deg,#2b1f18,#1a120b); border:1px solid rgba(255,255,255,0.03); box-shadow: 0 8px 20px rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; color:var(--muted); font-weight:700; font-size:13px; cursor:pointer; user-select:none; }
+    /* hand tile (DOM) */
+    .hand-tile{width:var(--tile-w);height:var(--tile-h);border-radius:10px;background:linear-gradient(180deg,var(--ivory),#f0ebe0);box-shadow:0 12px 30px rgba(0,0,0,0.6), inset 0 2px 8px rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:space-between;padding:8px;gap:8px;cursor:grab;user-select:none;flex:0 0 auto;transition:transform 160ms ease, box-shadow 160ms ease}
+    .hand-tile:active{cursor:grabbing}
+    .half{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;height:100%}
+    .divider{width:4px;height:80%;border-radius:4px;background:linear-gradient(180deg, rgba(0,0,0,0.12), rgba(255,255,255,0.06));display:flex;align-items:center;justify-content:center}
+    .stud{width:10px;height:10px;border-radius:50%;background:radial-gradient(circle at 30% 25%, #fff9e6 0%, #ffd36a 20%, #b07a2a 60%, #3b2a12 100%);box-shadow:0 2px 6px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.6)}
+    .pip{width:10px;height:10px;border-radius:50%;background:radial-gradient(circle at 50% 60%, #000, #111);box-shadow:inset 0 -6px 10px rgba(0,0,0,0.6);}
 
-    /* Hand area */
-    .hand{ position:fixed; left:0; right:0; bottom:0; background: linear-gradient(180deg, rgba(2,6,12,0.6), rgba(2,6,12,0.85)); border-top:1px solid rgba(255,255,255,0.02); padding:14px 18px; display:flex; align-items:center; justify-content:center; gap:12px; z-index:60; }
-    .hand-inner{ display:flex; gap:12px; align-items:center; justify-content:center; max-width:100%; overflow:auto; padding:6px; }
+    /* dragging */
+    .dragging{transform:translateZ(20px) scale(1.06);box-shadow:0 60px 140px rgba(0,0,0,0.95);z-index:1200}
 
-    /* Tile base style (white ivory look) */
-    .tile, .domino{
-      width: var(--tile-w);
-      height: var(--tile-h);
-      border-radius:10px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:8px;
-      gap:8px;
-      position:absolute;
-      transform-origin:center;
-      transition: transform 220ms cubic-bezier(.2,.9,.3,1), box-shadow 180ms ease, left 220ms linear, top 220ms linear;
-      background: linear-gradient(180deg, var(--ivory) 0%, #f3efe3 40%, #e9dfc8 100%);
-      border: 1px solid rgba(0,0,0,0.08);
-      box-shadow:
-        0 18px 40px rgba(2,6,12,0.6),
-        0 6px 18px rgba(2,6,12,0.45),
-        inset 0 2px 8px rgba(255,255,255,0.6),
-        inset 0 -8px 18px rgba(0,0,0,0.06);
-      color: var(--pip-black);
-      user-select:none;
-      -webkit-user-select:none;
-      will-change: transform, left, top;
-    }
+    /* modal */
+    .modal-root{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:2000}
+    .modal-card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:18px;border-radius:12px;box-shadow:0 30px 80px rgba(0,0,0,0.7);min-width:320px;text-align:center}
 
-    /* For hand tiles (not on board) we use relative positioning */
-    .domino.hand-tile{ position:relative; left:auto; top:auto; margin:0; cursor:grab; transition: transform 160ms ease, box-shadow 160ms ease; }
+    /* settings */
+    .settings{position:absolute;left:18px;top:18px;z-index:6;display:flex;flex-direction:column;gap:8px}
+    .toggle{display:flex;gap:8px;align-items:center}
 
-    /* halves and divider */
-    .tile .half, .domino .half{ flex:1; display:flex; align-items:center; justify-content:center; gap:6px; height:100%; }
-    .tile .divider, .domino .divider{
-      width:4px; height:80%; border-radius:4px; display:flex; align-items:center; justify-content:center;
-      background: linear-gradient(180deg, rgba(0,0,0,0.12), rgba(255,255,255,0.06));
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
-    }
+    /* debug */
+    .debug{position:absolute;left:18px;bottom:18px;color:var(--fps-color);font-size:12px;z-index:80;background:rgba(0,0,0,0.18);padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.02)}
 
-    /* metallic stud */
-    .tile .stud, .domino .stud{
-      width:10px; height:10px; border-radius:50%;
-      background: radial-gradient(circle at 30% 25%, #fff9e6 0%, #d4af37 20%, #8b6b2f 60%, #3b2a12 100%);
-      box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.6);
-    }
-
-    /* pips: deep engraved black dots */
-    .tile .pip, .domino .pip{
-      width:10px; height:10px; border-radius:50%;
-      background:
-        radial-gradient(circle at 35% 30%, rgba(255,255,255,0.06), rgba(255,255,255,0.02) 6%),
-        radial-gradient(circle at 50% 60%, rgba(0,0,0,0.95), rgba(0,0,0,0.85) 40%, rgba(0,0,0,0.6) 60%);
-      box-shadow:
-        inset 0 2px 6px rgba(255,255,255,0.02),
-        inset 0 -6px 10px rgba(0,0,0,0.6),
-        0 2px 6px rgba(0,0,0,0.25);
-      transform: translateZ(-2px);
-    }
-
-    /* playable highlight */
-    .tile.playable, .domino.playable{
-      transform: translateZ(12px) scale(1.04);
-      box-shadow: 0 40px 100px rgba(0,0,0,0.9), 0 0 24px rgba(0,0,0,0.06);
-      outline: 2px solid rgba(255,255,255,0.02);
-    }
-
-    /* dragging state */
-    .tile.dragging, .domino.dragging{
-      transform: translateZ(20px) scale(1.08) rotate(-2deg);
-      box-shadow: 0 60px 140px rgba(0,0,0,0.95);
-      z-index:1200;
-    }
-
-    /* tooltip & modal */
-    .hint-tooltip{ position:absolute; bottom:84px; left:50%; transform:translateX(-50%); background: rgba(10,14,20,0.92); border:1px solid rgba(255,255,255,0.04); padding:10px 14px; border-radius:10px; color:var(--muted); font-size:13px; z-index:60; box-shadow: 0 10px 30px rgba(0,0,0,0.6); opacity:0; transition: opacity 180ms; pointer-events:none; }
-    .hint-tooltip.show{ opacity:1; pointer-events:auto; }
-
-    /* confetti canvas */
-    .confetti-canvas{ position:fixed; inset:0; pointer-events:none; z-index:90; display:none; }
-
-    /* responsive */
-    @media (max-width: 720px){
-      :root{ --tile-w:72px; --tile-h:44px; --tile-gap:8px; }
-      .board-canvas{ height:320px; }
-      .app-wrap{ padding:12px; }
+    @media (max-width:720px){
+      :root{--tile-w:72px;--tile-h:44px}
+      .board-wrap{min-height:480px}
+      #boardCanvas{height:320px}
     }
   </style>
 </head>
 <body>
-  <div id="app" class="app-wrap" aria-live="polite">
-    <header class="scoreboard" role="region" aria-label="Scoreboard">
-      <div class="score-left">
-        <div class="score-card">
-          <h4>اللاعب</h4>
-          <p id="player-score">0</p>
-          <div class="muted">من 101</div>
-        </div>
-        <div class="score-card">
-          <h4>الخصم (AI)</h4>
-          <p id="ai-score">0</p>
-          <div class="muted">من 101</div>
-        </div>
+  <div class="app" id="app">
+    <header class="topbar" role="banner">
+      <div class="scores">
+        <div class="score"><h4>اللاعب</h4><p id="playerScore">0</p><div class="muted">من 101</div></div>
+        <div class="score"><h4>الخصم (AI)</h4><p id="aiScore">0</p><div class="muted">من 101</div></div>
       </div>
 
-      <div class="score-center">
+      <div class="center-info">
         <div class="muted">الجولة</div>
-        <div id="round-number" class="round-number">1</div>
+        <div id="roundNumber" style="font-weight:800;font-size:18px">1</div>
       </div>
 
-      <div class="score-right">
-        <button id="reset-match" class="btn">إعادة المباراة</button>
-        <div class="status">
-          <div id="turn-indicator">—</div>
-          <div id="status-text" class="muted">مرحبًا — ابدأ اللعب</div>
-        </div>
+      <div class="controls">
+        <button id="resetBtn" class="btn">إعادة المباراة</button>
+        <button id="themeBtn" class="btn">ثيم: عاجي</button>
+        <button id="soundBtn" class="btn">الصوت: تشغيل</button>
       </div>
     </header>
 
-    <main class="board-wrap" id="board-wrap" role="application" aria-label="لوحة الدومينو">
-      <div id="board-canvas" class="board-canvas" aria-hidden="false"></div>
+    <main class="board-wrap" role="main" aria-label="لوحة اللعب">
+      <div class="board-bg"></div>
+      <canvas id="boardCanvas" width="1200" height="420"></canvas>
 
-      <div id="placement-hints" class="placement-hints" aria-hidden="true">
-        <div id="hint-left" class="hint-dot"></div>
-        <div id="hint-right" class="hint-dot"></div>
+      <div class="boneyard" aria-hidden="false">
+        <div id="boneStack" class="stack">البونيارد</div>
+        <div id="boneyardCount" style="color:var(--muted)">28</div>
       </div>
 
-      <div id="boneyard-ui" class="boneyard-ui" aria-label="البونيارد">
-        <div id="bone-stack" class="bone-stack" title="اسحب قطعة">البونيارد</div>
-        <div id="boneyard-count" class="muted">28</div>
+      <div class="hint" id="hintText">اسحب قطعة أو انقر للعب</div>
+
+      <div class="settings" id="settings">
+        <div class="toggle"><label style="font-size:13px;color:var(--muted)">عرض FPS</label><input id="fpsToggle" type="checkbox" checked></div>
       </div>
 
-      <div id="first-move-tooltip" class="hint-tooltip" aria-hidden="true"></div>
+      <div class="debug" id="debug">FPS: --</div>
+
+      <div class="modal-root" id="modalRoot"></div>
     </main>
 
-    <aside class="hand" id="player-hand-area" aria-label="يد اللاعب">
-      <div class="hand-inner" id="player-hand" role="list"></div>
+    <aside class="hand" aria-label="يد اللاعب">
+      <div class="hand-inner" id="handInner"></div>
     </aside>
-
-    <div id="modal-root" class="modal-root" aria-hidden="true"></div>
-
-    <canvas id="confetti" class="confetti-canvas" width="1920" height="1080" aria-hidden="true"></canvas>
   </div>
 
-  <script type="module">
-    /* ============================
-       Audio Manager (WebAudio synthesis)
-       ============================ */
-    function AudioManager(){
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const master = ctx.createGain(); master.gain.value = 0.9; master.connect(ctx.destination);
-      let shuffleInterval = null;
-      function now(){ return ctx.currentTime; }
-      function resumeIfNeeded(){ if(ctx.state === 'suspended') ctx.resume().catch(()=>{}); }
+  <script>
+  /* ============================
+     Helpers
+     ============================ */
+  const clamp = (v,a,b)=> Math.max(a,Math.min(b,v));
+  const now = ()=> performance.now();
 
-      function playClack(opts = {}){
-        resumeIfNeeded();
-        const gainVal = opts.gain ?? 0.12;
-        const pitch = opts.pitch ?? 1.0;
-        const t = now();
-        const o1 = ctx.createOscillator(); o1.type = 'triangle'; o1.frequency.value = 120 * pitch;
-        const o2 = ctx.createOscillator(); o2.type = 'square'; o2.frequency.value = 180 * pitch;
+  /* ============================
+     AudioManager
+     ============================ */
+  function AudioManager(){
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const master = ctx.createGain(); master.gain.value = 0.9; master.connect(ctx.destination);
+    let shuffleInterval = null;
+    function resume(){ if(ctx.state === 'suspended') ctx.resume().catch(()=>{}); }
+    function playClack({gain=0.12,pitch=1.0} = {}){
+      resume();
+      const t = ctx.currentTime;
+      const o1 = ctx.createOscillator(); o1.type='triangle'; o1.frequency.value = 140 * pitch;
+      const o2 = ctx.createOscillator(); o2.type='square'; o2.frequency.value = 220 * pitch;
+      const g = ctx.createGain(); g.gain.value = 0.0001;
+      const h = ctx.createBiquadFilter(); h.type='highpass'; h.frequency.value = 700;
+      o1.connect(g); o2.connect(g); g.connect(h); h.connect(master);
+      g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(gain,t+0.005); g.gain.exponentialRampToValueAtTime(0.0001,t+0.18);
+      o1.start(t); o2.start(t); o1.stop(t+0.22); o2.stop(t+0.22);
+      // noise burst
+      const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate*0.06), ctx.sampleRate);
+      const d = buf.getChannelData(0); for(let i=0;i<d.length;i++) d[i] = (Math.random()*2-1)*Math.exp(-i/(ctx.sampleRate*0.02));
+      const s = ctx.createBufferSource(); s.buffer = buf;
+      const ng = ctx.createGain(); ng.gain.value = gain*0.6;
+      const nf = ctx.createBiquadFilter(); nf.type='bandpass'; nf.frequency.value=3000;
+      s.connect(nf); nf.connect(ng); ng.connect(master);
+      s.start(t); s.stop(t+0.12);
+    }
+    function playSlide({gain=0.08} = {}){
+      resume();
+      const t = ctx.currentTime;
+      const len = Math.floor(ctx.sampleRate*0.9);
+      const buf = ctx.createBuffer(1,len,ctx.sampleRate);
+      const d = buf.getChannelData(0); for(let i=0;i<len;i++) d[i] = (Math.random()*2-1)*(1 - i/len)*0.6;
+      const s = ctx.createBufferSource(); s.buffer = buf;
+      const g = ctx.createGain(); g.gain.value = 0.0001;
+      const bp = ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1200;
+      s.connect(bp); bp.connect(g); g.connect(master);
+      g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(gain,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+0.9);
+      s.start(t); s.stop(t+1.0);
+    }
+    function startShuffle({gain=0.06} = {}){
+      resume();
+      if(shuffleInterval) return;
+      shuffleInterval = setInterval(()=> playClack({gain,pitch:0.9+Math.random()*0.2}), 140);
+    }
+    function stopShuffle(){ if(shuffleInterval){ clearInterval(shuffleInterval); shuffleInterval=null; } }
+    function playFanfare({gain=0.18} = {}){
+      resume();
+      const t = ctx.currentTime + 0.02;
+      const notes = [880,1100,1320,1760];
+      notes.forEach((f,i)=>{
+        const o = ctx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(f,t+i*0.08);
         const g = ctx.createGain(); g.gain.value = 0.0001;
-        const hpf = ctx.createBiquadFilter(); hpf.type = 'highpass'; hpf.frequency.value = 800;
-        const lpf = ctx.createBiquadFilter(); lpf.type = 'lowpass'; lpf.frequency.value = 6000;
-        o1.connect(g); o2.connect(g); g.connect(hpf); hpf.connect(lpf); lpf.connect(master);
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.exponentialRampToValueAtTime(gainVal, t + 0.005);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
-        o1.start(t); o2.start(t); o1.stop(t + 0.22); o2.stop(t + 0.22);
+        const lp = ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=6000;
+        o.connect(lp); lp.connect(g); g.connect(master);
+        g.gain.setValueAtTime(0.0001,t+i*0.08); g.gain.exponentialRampToValueAtTime(gain*(1-i*0.12), t+i*0.08+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+i*0.08+1.2);
+        o.start(t+i*0.08); o.stop(t+i*0.08+1.2);
+      });
+    }
+    function playError(){ playClack({gain:0.06,pitch:0.6}); }
+    return { play(name,opts={}){ if(name==='clack') playClack(opts); else if(name==='slide') playSlide(opts); else if(name==='shuffle') startShuffle(opts); else if(name==='fanfare') playFanfare(opts); else if(name==='error') playError(); }, stop(name){ if(name==='shuffle') stopShuffle(); }, setMasterVolume(v){ master.gain.value = clamp(v,0,1); }, ctx };
+  }
 
-        const bufferSize = Math.floor(ctx.sampleRate * 0.06);
-        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-        const out = noiseBuffer.getChannelData(0);
-        for(let i=0;i<bufferSize;i++) out[i] = (Math.random()*2-1) * Math.exp(-i/(ctx.sampleRate*0.02));
-        const noise = ctx.createBufferSource(); noise.buffer = noiseBuffer;
-        const ng = ctx.createGain(); ng.gain.value = gainVal * 0.6;
-        const nf = ctx.createBiquadFilter(); nf.type = 'bandpass'; nf.frequency.value = 3000;
-        noise.connect(nf); nf.connect(ng); ng.connect(master);
-        noise.start(t); noise.stop(t + 0.12);
-      }
+  /* ============================
+     Engine (game logic)
+     ============================ */
+  class Engine {
+    constructor(){ this._listeners = new Map(); this.resetMatch(); }
+    on(evt,fn){ if(!this._listeners.has(evt)) this._listeners.set(evt,[]); this._listeners.get(evt).push(fn); }
+    emit(evt,p){ (this._listeners.get(evt)||[]).forEach(f=>{try{f(p)}catch(e){console.error(e)}}) }
 
-      function playSlide(opts = {}){
-        resumeIfNeeded();
-        const gainVal = opts.gain ?? 0.08;
-        const t = now();
-        const len = Math.floor(ctx.sampleRate * 0.9);
-        const buffer = ctx.createBuffer(1, len, ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for(let i=0;i<len;i++) data[i] = (Math.random()*2-1) * (1 - i/len) * 0.6;
-        const src = ctx.createBufferSource(); src.buffer = buffer;
-        const g = ctx.createGain(); g.gain.value = 0.0001;
-        const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1200;
-        src.connect(bp); bp.connect(g); g.connect(master);
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.linearRampToValueAtTime(gainVal, t + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
-        src.start(t); src.stop(t + 1.0);
-      }
+    resetMatch(){ this.scores={player:0,ai:0}; this.round=1; this._startRound(); }
+    _startRound(){
+      this.deck=[]; for(let i=0;i<=6;i++) for(let j=i;j<=6;j++) this.deck.push({a:i,b:j,id:`${i}-${j}`});
+      this._shuffle(this.deck);
+      this.boneyard=[...this.deck]; this.hands={player:[],ai:[]}; this.train=[]; this.roundFirst=true; this.roundWinner=null;
+      for(let i=0;i<7;i++){ this.hands.player.push(this.boneyard.pop()); this.hands.ai.push(this.boneyard.pop()); }
+      this._updateHighestDouble();
+      this.roundStarter = this._determineStarter();
+      this.currentTurn = this.roundStarter;
+      this.emit('roundStart',{round:this.round,starter:this.roundStarter,highestDouble:this.highestDouble});
+      this.emit('state',this.getState());
+    }
+    _shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } }
+    _determineStarter(){ const all=[...this.hands.player.map(t=>({...t,owner:'player'})),...this.hands.ai.map(t=>({...t,owner:'ai'}))]; const doubles=all.filter(t=>t.a===t.b); if(doubles.length){ doubles.sort((x,y)=>y.a-x.a); return doubles[0].owner } all.sort((x,y)=> (y.a+y.b)-(x.a+x.b)); return all[0].owner }
+    _updateHighestDouble(){ const all=[...this.hands.player.map(t=>({...t,owner:'player'})),...this.hands.ai.map(t=>({...t,owner:'ai'}))]; const doubles=all.filter(t=>t.a===t.b); if(!doubles.length){ this.highestDouble=null; this.highestOwner=null; return } doubles.sort((x,y)=>y.a-x.a); this.highestDouble={a:doubles[0].a,b:doubles[0].b,id:doubles[0].id}; this.highestOwner=doubles[0].owner }
 
-      function startShuffle(opts = {}){
-        resumeIfNeeded();
-        const gainVal = opts.gain ?? 0.06;
-        if(shuffleInterval) return;
-        shuffleInterval = setInterval(()=> playClack({ gain: gainVal, pitch: 0.9 + Math.random()*0.2 }), 140);
-      }
-      function stopShuffle(){ if(shuffleInterval){ clearInterval(shuffleInterval); shuffleInterval = null; } }
+    getState(){ return { round:this.round, scores:{...this.scores}, hands:{player:[...this.hands.player],ai:[...this.hands.ai]}, boneyard:[...this.boneyard], train:[...this.train], currentTurn:this.currentTurn, highestDouble:this.highestDouble, highestOwner:this.highestOwner, roundFirst:this.roundFirst } }
 
-      function playFanfare(opts = {}){
-        resumeIfNeeded();
-        const gainVal = opts.gain ?? 0.18;
-        const t = now() + 0.02;
-        const notes = [880, 1100, 1320, 1760];
-        notes.forEach((freq, i)=>{
-          const o = ctx.createOscillator(); o.type = 'sine';
-          const g = ctx.createGain(); g.gain.value = 0.0001;
-          const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 6000;
-          o.frequency.setValueAtTime(freq, t + i*0.08);
-          o.connect(f); f.connect(g); g.connect(master);
-          g.gain.setValueAtTime(0.0001, t + i*0.08);
-          g.gain.exponentialRampToValueAtTime(gainVal * (1 - i*0.12), t + i*0.08 + 0.02);
-          g.gain.exponentialRampToValueAtTime(0.0001, t + i*0.08 + 1.2);
-          o.start(t + i*0.08); o.stop(t + i*0.08 + 1.2);
-        });
-        const bell = ctx.createOscillator(); bell.type = 'triangle'; bell.frequency.value = 1760;
-        const bg = ctx.createGain(); bg.gain.value = 0.0001;
-        const bf = ctx.createBiquadFilter(); bf.type = 'highpass'; bf.frequency.value = 800;
-        bell.connect(bf); bf.connect(bg); bg.connect(master);
-        bg.gain.setValueAtTime(0.0001, t);
-        bg.gain.exponentialRampToValueAtTime(gainVal*0.6, t + 0.02);
-        bg.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
-        bell.start(t); bell.stop(t + 1.6);
-      }
+    canPlayerDraw(){ return this.boneyard.length>0 && this.currentTurn==='player' }
+    playerDraw(){ return this._draw('player') }
+    _draw(who){ if(this.boneyard.length===0) return null; const t=this.boneyard.pop(); this.hands[who].push(t); this.emit('draw',{who,t}); this.emit('state',this.getState()); return t }
 
-      function playError(opts = {}){ playClack({ gain: opts.gain ?? 0.06, pitch: 0.6 }); }
-
-      return {
-        play(name, opts = {}){
-          if(name === 'clack') playClack(opts);
-          else if(name === 'slide') playSlide(opts);
-          else if(name === 'shuffle') startShuffle(opts);
-          else if(name === 'fanfare') playFanfare(opts);
-          else if(name === 'error') playError(opts);
-        },
-        stop(name){
-          if(name === 'shuffle') stopShuffle();
-        },
-        setMasterVolume(v){ master.gain.value = Math.max(0, Math.min(1, v)); },
-        ctx
-      };
+    attemptPlaceFromPlayer(handIndex, side, coords){
+      if(this.currentTurn!=='player') return {success:false,reason:'not-turn'};
+      const tile = this.hands.player[handIndex]; if(!tile) return {success:false,reason:'no-tile'};
+      if(!this._isPlayable(tile,'player')) return {success:false,reason:'not-playable'};
+      const placed = this._placeTile(tile,'player',side,coords);
+      if(placed){ this.hands.player.splice(handIndex,1); this.roundFirst=false; this.emit('tilePlaced',{tile:placed,by:'player'}); this._afterPlacement('player'); return {success:true,tile:placed} }
+      return {success:false,reason:'invalid'}
     }
 
-    /* ============================
-       Engine (game logic)
-       ============================ */
-    class Engine {
-      constructor(opts = {}) {
-        this.targetScore = opts.targetScore || 101;
-        this._listeners = new Map();
-        this._initState();
-      }
-      _initState(){
-        this.deck = [];
-        this.boneyard = [];
-        this.hands = { player: [], ai: [] };
-        this.train = [];
-        this.currentTurn = null;
-        this.round = 1;
-        this.scores = { player:0, ai:0 };
-        this.roundStarter = null;
-        this.roundWinner = null;
-        this.animLock = false;
-        this.highestDoubleTile = null;
-        this.highestDoubleOwner = null;
-        this.roundFirstMove = true;
-      }
-      on(evt, fn){ if(!this._listeners.has(evt)) this._listeners.set(evt,[]); this._listeners.get(evt).push(fn); }
-      off(evt, fn){ if(!this._listeners.has(evt)) return; this._listeners.set(evt, this._listeners.get(evt).filter(f=>f!==fn)); }
-      emit(evt, payload){ (this._listeners.get(evt) || []).forEach(f=>{ try{ f(payload); }catch(e){console.error(e);} }); }
-
-      buildDeck(){
-        const arr=[];
-        for(let i=0;i<=6;i++) for(let j=i;j<=6;j++) arr.push({a:i,b:j,id:`${i}-${j}`});
-        return arr;
-      }
-      shuffle(arr){
-        for(let i=arr.length-1;i>0;i--){
-          const j = Math.floor(Math.random()*(i+1));
-          [arr[i],arr[j]]=[arr[j],arr[i]];
-        }
-        return arr;
-      }
-
-      initMatch(){
-        this.scores = { player:0, ai:0 };
-        this.round = 1;
-        this.emit('state', this.getState());
-        this.startRound(true);
-      }
-      resetMatch(){ this.initMatch(); }
-
-      startRound(isInitial=false, prevWinner=null){
-        this.deck = this.buildDeck();
-        this.shuffle(this.deck);
-        this.boneyard = [...this.deck];
-        this.train = [];
-        this.hands = { player: [], ai: [] };
-        for(let i=0;i<7;i++){
-          this.hands.player.push(this.boneyard.pop());
-          this.hands.ai.push(this.boneyard.pop());
-        }
-        this.updateHighestDouble();
-        this.roundFirstMove = true;
-        if(isInitial) this.roundStarter = this.determineStarter();
-        else if(prevWinner) this.roundStarter = prevWinner;
-        this.currentTurn = this.roundStarter;
-        this.emit('roundStart', { round: this.round, starter: this.roundStarter, highestDouble: this.highestDoubleTile });
-        this.emit('state', this.getState());
-      }
-
-      determineStarter(){
-        const all = [...this.hands.player.map(t=>({...t,owner:'player'})), ...this.hands.ai.map(t=>({...t,owner:'ai'}))];
-        const doubles = all.filter(t=>t.a===t.b);
-        if(doubles.length){
-          doubles.sort((x,y)=> y.a - x.a);
-          return doubles[0].owner;
-        }
-        all.sort((x,y)=> (y.a+y.b) - (x.a+x.b));
-        return all[0].owner;
-      }
-
-      updateHighestDouble(){
-        const all = [...this.hands.player.map(t=>({...t,owner:'player'})), ...this.hands.ai.map(t=>({...t,owner:'ai'}))];
-        const doubles = all.filter(t=>t.a===t.b);
-        if(doubles.length===0){ this.highestDoubleTile = null; this.highestDoubleOwner = null; return; }
-        doubles.sort((x,y)=> y.a - x.a);
-        this.highestDoubleTile = { a: doubles[0].a, b: doubles[0].b, id: doubles[0].id };
-        this.highestDoubleOwner = doubles[0].owner;
-      }
-
-      attemptPlaceFromPlayer(handIndex, side, coords){
-        if(this.currentTurn !== 'player' || this.animLock) return { success:false, reason:'not-your-turn' };
-        const tile = this.hands.player[handIndex];
-        if(!tile) return { success:false, reason:'no-tile' };
-        if(!this.isTilePlayable(tile, 'player')) return { success:false, reason:'not-playable' };
-        const placement = this._placeTile(tile, 'player', side, coords);
-        if(placement){
-          this.hands.player.splice(handIndex,1);
-          this.roundFirstMove = false;
-          this.emit('tilePlaced', { tile: placement, by:'player' });
-          this._afterPlacement('player');
-          return { success:true, tile: placement };
-        }
-        return { success:false, reason:'invalid-placement' };
-      }
-
-      _placeTile(tile, owner, side='right', coords=null){
-        const placed = { ...tile, owner, isDouble: tile.a===tile.b, id: tile.id, spinner:false };
-        if(this.train.length === 0){
-          placed.dir = { x: 1, y: 0 };
-          placed.index = 0;
-          placed.rot = placed.isDouble ? 0 : 90;
-          if(placed.isDouble) placed.spinner = true;
-          this.train.push(placed);
-          return placed;
-        }
-
-        const spinnerIndex = this.train.findIndex(t=>t.isDouble && t.spinner);
-        if(spinnerIndex >= 0){
-          if(side === 'left'){
-            placed.dir = { x: -1, y: 0 };
-            placed.rot = placed.isDouble ? 0 : 90;
-            this.train.unshift(placed);
-          } else {
-            placed.dir = { x: 1, y: 0 };
-            placed.rot = placed.isDouble ? 0 : 90;
-            this.train.push(placed);
-          }
-          if(placed.isDouble && !this.train.some(t=>t.spinner)) placed.spinner = true;
-          return placed;
-        }
-
-        const leftEnd = this.train[0];
-        const rightEnd = this.train[this.train.length-1];
-        const leftVal = leftEnd.a;
-        const rightVal = rightEnd.b;
-
-        const canLeft = (tile.a === leftVal || tile.b === leftVal);
-        const canRight = (tile.a === rightVal || tile.b === rightVal);
-
-        if(!canLeft && !canRight) return null;
-
-        let targetSide = null;
-        if(canLeft && !canRight) targetSide = 'left';
-        else if(canRight && !canLeft) targetSide = 'right';
-        else targetSide = side || 'right';
-
-        if(targetSide === 'left'){
-          placed.dir = { x: -1, y: 0 };
-          placed.rot = placed.isDouble ? 0 : 90;
-          this.train.unshift(placed);
-        } else {
-          placed.dir = { x: 1, y: 0 };
-          placed.rot = placed.isDouble ? 0 : 90;
-          this.train.push(placed);
-        }
-
-        if(placed.isDouble && !this.train.some(t=>t.spinner)){
-          placed.spinner = true;
-        }
-
+    _placeTile(tile,owner,side='right',coords=null){
+      const placed = {...tile,owner,isDouble:tile.a===tile.b,spinner:false};
+      if(this.train.length===0){ placed.dir={x:1,y:0}; placed.rot=placed.isDouble?0:90; if(placed.isDouble) placed.spinner=true; this.train.push(placed); return placed }
+      const spinnerIndex = this.train.findIndex(t=>t.isDouble && t.spinner);
+      if(spinnerIndex>=0){
+        if(side==='left'){ placed.dir={x:-1,y:0}; placed.rot=placed.isDouble?0:90; this.train.unshift(placed) } else { placed.dir={x:1,y:0}; placed.rot=placed.isDouble?0:90; this.train.push(placed) }
+        if(placed.isDouble && !this.train.some(t=>t.spinner)) placed.spinner=true;
         return placed;
       }
-
-      _afterPlacement(who){
-        this.emit('state', this.getState());
-
-        if(this.hands.player.length === 0 || this.hands.ai.length === 0){
-          const winner = this.hands.player.length === 0 ? 'player' : 'ai';
-          this.roundWinner = winner;
-          const loser = winner === 'player' ? 'ai' : 'player';
-          const points = this.sumPips(this.hands[loser]);
-          this.scores[winner] += points;
-          this.emit('roundEnd', { winner, points });
-          this.emit('victory', winner);
-          return;
-        }
-
-        const playerPlayable = this.getPlayableTiles(this.hands.player).length > 0;
-        const aiPlayable = this.getPlayableTiles(this.hands.ai).length > 0;
-        if(!playerPlayable && !aiPlayable && this.boneyard.length === 0){
-          const playerPips = this.sumPips(this.hands.player);
-          const aiPips = this.sumPips(this.hands.ai);
-          let winner = null, points = 0;
-          if(playerPips < aiPips){ winner = 'player'; points = aiPips - playerPips; }
-          else if(aiPips < playerPips){ winner = 'ai'; points = playerPips - aiPips; }
-          if(winner){
-            this.scores[winner] += points;
-            this.roundWinner = winner;
-            this.emit('roundEnd', { winner, points, reason:'blocked' });
-            this.emit('victory', winner);
-            return;
-          } else {
-            this.emit('roundEnd', { winner:null, points:0, reason:'tie' });
-            return;
-          }
-        }
-
-        this.currentTurn = (who === 'player') ? 'ai' : 'player';
-        this.emit('state', this.getState());
-        if(this.currentTurn === 'ai') setTimeout(()=> this._aiPlay(), 500);
-      }
-
-      _aiPlay(){
-        if(this.animLock) return;
-        if(this.train.length === 0 && this.roundFirstMove && this.highestDoubleTile && this.highestDoubleOwner === 'ai'){
-          const idx = this.hands.ai.findIndex(t=>t.id === this.highestDoubleTile.id);
-          if(idx >= 0){
-            const tile = this.hands.ai[idx];
-            const placement = this._placeTile(tile, 'ai', 'right', null);
-            if(placement){
-              this.hands.ai.splice(idx,1);
-              this.roundFirstMove = false;
-              this.emit('tilePlaced', { tile: placement, by:'ai' });
-              this._afterPlacement('ai');
-              return;
-            }
-          }
-        }
-
-        const playable = this.getPlayableTiles(this.hands.ai);
-        if(playable.length === 0){
-          if(this.boneyard.length > 0){
-            this.draw('ai');
-            setTimeout(()=> this._aiPlay(), 400);
-            return;
-          } else {
-            this.currentTurn = 'player';
-            this.emit('state', this.getState());
-            this.emit('pass', { who:'ai' });
-            return;
-          }
-        }
-
-        playable.sort((x,y)=>{
-          const xScore = (x.a===x.b?100:0) + (x.a+x.b);
-          const yScore = (y.a===y.b?100:0) + (y.a+y.b);
-          return yScore - xScore;
-        });
-
-        const chosen = playable[0];
-        const idx = this.hands.ai.findIndex(t=>t.id===chosen.id);
-        const placement = this._placeTile(chosen, 'ai', 'right', null);
-        if(placement){
-          this.hands.ai.splice(idx,1);
-          this.emit('tilePlaced', { tile: placement, by:'ai' });
-          this._afterPlacement('ai');
-        }
-      }
-
-      draw(who){
-        if(this.boneyard.length === 0) return null;
-        const tile = this.boneyard.pop();
-        if(who === 'player') this.hands.player.push(tile);
-        else this.hands.ai.push(tile);
-        this.emit('draw', { who, tile });
-        this.emit('state', this.getState());
-        return tile;
-      }
-      playerDraw(){ return this.draw('player'); }
-      canPlayerDraw(){ return this.boneyard.length > 0 && this.currentTurn === 'player' && !this.animLock; }
-
-      isTilePlayable(tile, who){
-        if(this.train.length === 0 && this.roundFirstMove && this.highestDoubleTile){
-          if(this.highestDoubleOwner === who) return tile.id === this.highestDoubleTile.id;
-          return false;
-        }
-        if(this.train.length === 0) return true;
-        const leftEnd = this.train[0].a;
-        const rightEnd = this.train[this.train.length-1].b;
-        return tile.a === leftEnd || tile.b === leftEnd || tile.a === rightEnd || tile.b === rightEnd;
-      }
-
-      getPlayableTiles(hand){
-        return hand.filter(t => this.isTilePlayable(t, hand === this.hands.player ? 'player' : 'ai'));
-      }
-
-      sumPips(hand){ return hand.reduce((s,t)=> s + t.a + t.b, 0); }
-
-      getState(){
-        return {
-          round: this.round,
-          scores: {...this.scores},
-          hands: { player: [...this.hands.player], ai: [...this.hands.ai] },
-          boneyard: [...this.boneyard],
-          train: [...this.train],
-          currentTurn: this.currentTurn,
-          highestDoubleTile: this.highestDoubleTile,
-          highestDoubleOwner: this.highestDoubleOwner,
-          animLock: this.animLock,
-          roundFirstMove: this.roundFirstMove
-        };
-      }
+      const leftEnd=this.train[0], rightEnd=this.train[this.train.length-1];
+      const leftVal=leftEnd.a, rightVal=rightEnd.b;
+      const canLeft=(tile.a===leftVal||tile.b===leftVal), canRight=(tile.a===rightVal||tile.b===rightVal);
+      if(!canLeft && !canRight) return null;
+      let target = null;
+      if(canLeft && !canRight) target='left'; else if(canRight && !canLeft) target='right'; else target=side||'right';
+      if(target==='left'){ placed.dir={x:-1,y:0}; placed.rot=placed.isDouble?0:90; this.train.unshift(placed) } else { placed.dir={x:1,y:0}; placed.rot=placed.isDouble?0:90; this.train.push(placed) }
+      if(placed.isDouble && !this.train.some(t=>t.spinner)) placed.spinner=true;
+      return placed;
     }
 
-    /* ============================
-       Board (2D layout & rendering)
-       ============================ */
-    class Board {
-      constructor(opts = {}){
-        this.container = opts.container;
-        this.tileW = opts.tileWidth || 96;
-        this.tileH = opts.tileHeight || 56;
-        this.gap = opts.gap || 12;
-        this.onPlaceRequest = opts.onPlaceRequest || function(){ return { success:false }; };
-        this.placedElements = new Map();
-        this.origin = { x: Math.floor((this.container.clientWidth)/2), y: Math.floor((this.container.clientHeight)/2) };
-        this._init();
+    _afterPlacement(who){
+      this.emit('state',this.getState());
+      if(this.hands.player.length===0||this.hands.ai.length===0){
+        const winner = this.hands.player.length===0?'player':'ai';
+        const loser = winner==='player'?'ai':'player';
+        const pts = this._sumPips(this.hands[loser]);
+        this.scores[winner]+=pts;
+        this.emit('roundEnd',{winner,pts});
+        this.emit('victory',winner);
+        return;
       }
-      _init(){
-        this.container.style.position = 'relative';
-        this.container.innerHTML = '';
-        window.addEventListener('resize', ()=> {
-          this.origin = { x: Math.floor((this.container.clientWidth)/2), y: Math.floor((this.container.clientHeight)/2) };
-          if(this.lastState) this.updateFromState(this.lastState);
-        });
+      const pPlayable = this.getPlayable(this.hands.player).length>0;
+      const aiPlayable = this.getPlayable(this.hands.ai).length>0;
+      if(!pPlayable && !aiPlayable && this.boneyard.length===0){
+        const pPips=this._sumPips(this.hands.player), aiPips=this._sumPips(this.hands.ai);
+        let winner=null,pts=0;
+        if(pPips<aiPips){ winner='player'; pts=aiPips-pPips } else if(aiPips<pPips){ winner='ai'; pts=pPips-aiPips }
+        if(winner){ this.scores[winner]+=pts; this.emit('roundEnd',{winner,pts,reason:'blocked'}); this.emit('victory',winner); return } else { this.emit('roundEnd',{winner:null,pts:0,reason:'tie'}); return }
       }
+      this.currentTurn = (who==='player')?'ai':'player';
+      this.emit('state',this.getState());
+      if(this.currentTurn==='ai') setTimeout(()=> this._aiPlay(), 420 + Math.random()*600);
+    }
 
-      computeLayout(train){
-        const layout = [];
-        if(!train || train.length === 0) return layout;
-
-        let x = this.origin.x;
-        let y = this.origin.y;
-        let dir = { x: 1, y: 0 };
-        const stepX = this.tileW + this.gap;
-        const stepY = this.tileH + this.gap;
-
-        for(let i=0;i<train.length;i++){
-          const t = train[i];
-          const isDouble = !!t.isDouble;
-          let rot = 0;
-          if(isDouble) rot = 0;
-          else rot = dir.x !== 0 ? 90 : 0;
-
-          layout.push({ id: t.id, a:t.a, b:t.b, owner:t.owner, isDouble, rot, x, y, dir:{...dir}, index:i, spinner: !!t.spinner });
-
-          let nx = x + dir.x * stepX;
-          let ny = y + dir.y * stepY;
-
-          const padding = Math.max(40, this.tileW);
-          const withinX = nx > padding && nx < (this.container.clientWidth - padding);
-          const withinY = ny > padding && ny < (this.container.clientHeight - padding);
-          if(!withinX || !withinY){
-            const newDir = { x: dir.y, y: -dir.x };
-            dir = newDir;
-            nx = x + dir.x * stepX;
-            ny = y + dir.y * stepY;
-          }
-
-          x = nx; y = ny;
-        }
-
-        return layout;
+    _aiPlay(){
+      if(this.train.length===0 && this.roundFirst && this.highestDouble && this.highestOwner==='ai'){
+        const idx = this.hands.ai.findIndex(t=>t.id===this.highestDouble.id);
+        if(idx>=0){ const tile=this.hands.ai[idx]; const placement=this._placeTile(tile,'ai','right',null); if(placement){ this.hands.ai.splice(idx,1); this.roundFirst=false; this.emit('tilePlaced',{tile:placement,by:'ai'}); this._afterPlacement('ai'); return } }
       }
+      const playable = this.getPlayable(this.hands.ai);
+      if(playable.length===0){ if(this.boneyard.length>0){ this._draw('ai'); setTimeout(()=> this._aiPlay(), 360); return } else { this.currentTurn='player'; this.emit('state',this.getState()); this.emit('pass',{who:'ai'}); return } }
+      playable.sort((x,y)=> ((y.a===y.b?100:0)+(y.a+y.b)) - ((x.a===x.b?100:0)+(x.a+x.b)));
+      const chosen = playable[0]; const idx = this.hands.ai.findIndex(t=>t.id===chosen.id); const placement=this._placeTile(chosen,'ai','right',null);
+      if(placement){ this.hands.ai.splice(idx,1); this.emit('tilePlaced',{tile:placement,by:'ai'}); this._afterPlacement('ai'); }
+    }
 
-      updateFromState(state){
-        this.lastState = state;
-        const layout = this.computeLayout(state.train);
-        const ids = new Set(layout.map(l=>l.id));
-        for(const [id,el] of this.placedElements.entries()){
-          if(!ids.has(id)){
-            el.remove();
-            this.placedElements.delete(id);
-          }
-        }
-        layout.forEach(item=>{
-          let el = this.placedElements.get(item.id);
-          if(!el){
-            el = this._createTileElement(item);
-            this.container.appendChild(el);
-            this.placedElements.set(item.id, el);
-          }
-          this._moveTileElement(el, item.x - this.tileW/2, item.y - this.tileH/2, item.rot, item.isDouble);
-        });
+    _isPlayable(tile,who){ if(this.train.length===0 && this.roundFirst && this.highestDouble){ if(this.highestOwner===who) return tile.id===this.highestDouble.id; return false } if(this.train.length===0) return true; const left=this.train[0].a, right=this.train[this.train.length-1].b; return tile.a===left||tile.b===left||tile.a===right||tile.b===right }
+    getPlayable(hand){ return hand.filter(t=> this._isPlayable(t, hand===this.hands.player?'player':'ai')) }
+    _sumPips(hand){ return hand.reduce((s,t)=>s+t.a+t.b,0) }
+  }
+
+  /* ============================
+     BoardRenderer (Canvas)
+     ============================ */
+  class BoardRenderer {
+    constructor(canvas, engine){
+      this.canvas = canvas; this.ctx = canvas.getContext('2d'); this.engine = engine;
+      this.dpr = Math.max(1, window.devicePixelRatio || 1);
+      this.tileW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tile-w')) || 96;
+      this.tileH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tile-h')) || 56;
+      this.gap = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tile-gap')) || 12;
+      this.origin = {x:canvas.clientWidth/2, y:canvas.clientHeight/2};
+      this._resize();
+      window.addEventListener('resize', ()=> this._resize());
+      this._pending = false;
+    }
+    _resize(){
+      const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
+      this.canvas.width = Math.floor(w * this.dpr); this.canvas.height = Math.floor(h * this.dpr);
+      this.ctx.setTransform(this.dpr,0,0,this.dpr,0,0);
+      this.origin = {x:w/2, y:h/2};
+      this.renderImmediate();
+    }
+    computeLayout(train){
+      const layout = [];
+      if(!train || train.length===0) return layout;
+      let x = this.origin.x, y = this.origin.y;
+      let dir = {x:1,y:0};
+      const stepX = this.tileW + this.gap, stepY = this.tileH + this.gap;
+      for(let i=0;i<train.length;i++){
+        const t = train[i];
+        const isDouble = !!t.isDouble;
+        const rot = isDouble?0:(dir.x!==0?90:0);
+        layout.push({id:t.id,a:t.a,b:t.b,owner:t.owner,isDouble,rot,x,y,index:i,spinner:!!t.spinner});
+        let nx = x + dir.x * stepX, ny = y + dir.y * stepY;
+        const pad = Math.max(40,this.tileW);
+        const withinX = nx > pad && nx < (this.canvas.clientWidth/this.dpr - pad);
+        const withinY = ny > pad && ny < (this.canvas.clientHeight/this.dpr - pad);
+        if(!withinX || !withinY){ const newDir = {x:dir.y, y:-dir.x}; dir=newDir; nx = x + dir.x * stepX; ny = y + dir.y * stepY; }
+        x = nx; y = ny;
       }
+      return layout;
+    }
+    renderImmediate(){ const state = this.engine.getState(); const layout = this.computeLayout(state.train); this._draw(layout); }
+    scheduleRender(){ if(this._pending) return; this._pending=true; requestAnimationFrame(()=>{ this._pending=false; this.renderImmediate(); }); }
+    _draw(layout){
+      const ctx = this.ctx; const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
+      ctx.clearRect(0,0,w,h);
+      // subtle vignette
+      const g = ctx.createLinearGradient(0,0,0,h); g.addColorStop(0,'rgba(0,0,0,0.06)'); g.addColorStop(1,'rgba(0,0,0,0.14)');
+      ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+      // draw tiles back-to-front
+      for(const item of layout) this._drawTile(ctx, item.x - this.tileW/2, item.y - this.tileH/2, item);
+    }
+    _drawTile(ctx,left,top,item){
+      const w = this.tileW, h = this.tileH;
+      ctx.save();
+      ctx.translate(left + w/2, top + h/2);
+      const rot = item.isDouble?0:90;
+      ctx.rotate(rot * Math.PI/180);
+      // shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.32)';
+      ctx.beginPath(); this._roundRect(ctx, -w/2+4, -h/2+6, w, h, 10); ctx.fill();
+      // body gradient
+      const grad = ctx.createLinearGradient(-w/2,-h/2,w/2,h/2);
+      grad.addColorStop(0,'#ffffff'); grad.addColorStop(0.5,'#f3f6fb'); grad.addColorStop(1,'#e9eef6');
+      ctx.fillStyle = grad;
+      ctx.beginPath(); this._roundRect(ctx, -w/2, -h/2, w, h, 10); ctx.fill();
+      // inner inset to simulate bevel
+      ctx.strokeStyle = 'rgba(0,0,0,0.06)'; ctx.lineWidth = 1; ctx.beginPath(); this._roundRect(ctx, -w/2+0.5, -h/2+0.5, w-1, h-1, 9); ctx.stroke();
+      // divider
+      ctx.fillStyle = 'rgba(0,0,0,0.08)'; ctx.beginPath(); ctx.fillRect(-2, -h*0.4, 4, h*0.8);
+      // stud (metallic)
+      ctx.beginPath(); ctx.fillStyle = '#d4af37'; ctx.arc(0,0,5,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.arc(-1,-1,2.2,0,Math.PI*2); ctx.fill();
+      // pips
+      this._drawPips(ctx, -w/4, 0, item.a);
+      this._drawPips(ctx, w/4, 0, item.b);
+      ctx.restore();
+    }
+    _drawPips(ctx, cx, cy, n){
+      const positions = {
+        0: [[0,0]],
+        1: [[0,0]],
+        2: [[-10,-10],[10,10]],
+        3: [[-10,-10],[0,0],[10,10]],
+        4: [[-10,-10],[10,-10],[-10,10],[10,10]],
+        5: [[-10,-10],[10,-10],[0,0],[-10,10],[10,10]],
+        6: [[-10,-10],[10,-10],[-10,0],[10,0],[-10,10],[10,10]]
+      };
+      const list = positions[n] || positions[0];
+      for(const p of list){
+        const x = cx + p[0], y = cy + p[1];
+        // engraved effect
+        ctx.beginPath(); ctx.fillStyle = '#0b0b0b'; ctx.arc(x,y,6,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.arc(x-1,y-1,2.6,0,Math.PI*2); ctx.fill();
+      }
+    }
+    _roundRect(ctx,x,y,w,h,r){ const rr=r; ctx.moveTo(x+rr,y); ctx.arcTo(x+w,y,x+w,y+h,rr); ctx.arcTo(x+w,y+h,x,y+h,rr); ctx.arcTo(x,y+h,x,y,rr); ctx.arcTo(x,y,x+w,y,rr); ctx.closePath(); }
+  }
 
-      _createTileElement(item){
-        const el = document.createElement('div');
-        el.className = 'tile';
-        el.dataset.id = item.id;
-        const left = document.createElement('div'); left.className = 'half pips-'+item.a;
-        for(let i=0;i<this._pipCount(item.a);i++){ const p=document.createElement('div'); p.className='pip'; left.appendChild(p); }
-        const div = document.createElement('div'); div.className='divider';
-        const stud = document.createElement('div'); stud.className='stud'; div.appendChild(stud);
-        const right = document.createElement('div'); right.className = 'half pips-'+item.b;
-        for(let i=0;i<this._pipCount(item.b);i++){ const p=document.createElement('div'); p.className='pip'; right.appendChild(p); }
+  /* ============================
+     UIController (DOM hand + interactions)
+     ============================ */
+  class UIController {
+    constructor(engine, board, audio){
+      this.engine = engine; this.board = board; this.audio = audio;
+      this.handEl = document.getElementById('handInner');
+      this.boneyardCountEl = document.getElementById('boneyardCount');
+      this.boneStack = document.getElementById('boneStack');
+      this.playerScoreEl = document.getElementById('playerScore');
+      this.aiScoreEl = document.getElementById('aiScore');
+      this.roundNumberEl = document.getElementById('roundNumber');
+      this.turnIndicator = document.getElementById('turnIndicator');
+      this.statusText = document.getElementById('statusText');
+      this.debugEl = document.getElementById('debug');
+      this.modalRoot = document.getElementById('modalRoot');
+      this.themeBtn = document.getElementById('themeBtn');
+      this.soundBtn = document.getElementById('soundBtn');
+      this.resetBtn = document.getElementById('resetBtn');
+      this.fpsToggle = document.getElementById('fpsToggle');
+      this._soundOn = true;
+      this._theme = 'ivory';
+      this._bind();
+      this._fpsLoop();
+    }
+    _bind(){
+      this.engine.on('state', s=> this.updateFromState(s));
+      this.engine.on('tilePlaced', info=> { this._flash(`${info.by==='player'?'أنت':'AI'} لعب ${info.tile.a}-${info.tile.b}`); });
+      this.engine.on('draw', ()=> { this._flash('تم السحب'); });
+      this.engine.on('victory', winner=> { this._onVictory(winner); });
+      this.boneStack.addEventListener('click', ()=> {
+        if(this.engine.canPlayerDraw()){ const t=this.engine.playerDraw(); if(t){ if(this._soundOn) this.audio.play('slide'); this._flash('سحبت قطعة'); } else { this._flash('البونيارد فارغ'); if(this._soundOn) this.audio.play('error'); } }
+      });
+      this.resetBtn.addEventListener('click', ()=> { if(confirm('إعادة المباراة؟')) this.engine.resetMatch(); });
+      this.themeBtn.addEventListener('click', ()=> this._toggleTheme());
+      this.soundBtn.addEventListener('click', ()=> this._toggleSound());
+      this.fpsToggle.addEventListener('change', ()=> { this.debugEl.style.display = this.fpsToggle.checked ? 'block' : 'none'; });
+    }
+    updateFromState(state){
+      this.playerScoreEl.textContent = state.scores.player;
+      this.aiScoreEl.textContent = state.scores.ai;
+      this.roundNumberEl.textContent = state.round;
+      this.boneyardCountEl.textContent = state.boneyard.length;
+      this.turnIndicator.textContent = state.currentTurn==='player'?'دورك':'دور AI';
+      this.statusText.textContent = state.currentTurn==='player'?'قم بالحركة':'الخصم يفكر';
+      this._renderHand(state.hands.player);
+      this.board.scheduleRender();
+    }
+    _renderHand(hand){
+      this.handEl.innerHTML = '';
+      hand.forEach((tile, idx)=>{
+        const el = document.createElement('div'); el.className='hand-tile'; el.draggable=false;
+        el.dataset.index = idx; el.dataset.id = tile.id;
+        const left = document.createElement('div'); left.className='half';
+        for(let i=0;i<this._pipCount(tile.a);i++){ const p=document.createElement('div'); p.className='pip'; left.appendChild(p); }
+        const div = document.createElement('div'); div.className='divider'; const stud = document.createElement('div'); stud.className='stud'; div.appendChild(stud);
+        const right = document.createElement('div'); right.className='half';
+        for(let i=0;i<this._pipCount(tile.b);i++){ const p=document.createElement('div'); p.className='pip'; right.appendChild(p); }
         el.appendChild(left); el.appendChild(div); el.appendChild(right);
-        el.style.position = 'absolute';
-        el.style.left = `${this.origin.x - this.tileW/2}px`;
-        el.style.top = `${this.origin.y - this.tileH/2}px`;
-        el.style.width = `${this.tileW}px`;
-        el.style.height = `${this.tileH}px`;
-        el.style.transition = 'transform 260ms cubic-bezier(.2,.9,.3,1), left 260ms linear, top 260ms linear';
-        return el;
-      }
+        el.addEventListener('pointerdown', (ev)=> this._startDrag(ev, el, idx));
+        el.addEventListener('click', (ev)=> this._onClickPlay(ev, idx));
+        el.addEventListener('pointermove', (ev)=> this._onHoverTilt(ev, el));
+        el.addEventListener('pointerleave', ()=> el.style.transform='');
+        this.handEl.appendChild(el);
+      });
+    }
+    _pipCount(n){ return n===0?1:n; }
 
-      _moveTileElement(el, left, top, rot, isDouble){
-        el.style.left = `${left}px`;
-        el.style.top = `${top}px`;
-        const r = isDouble ? 0 : 90;
-        el.style.transform = `rotate(${r}deg) translateZ(0)`;
-      }
-
-      _pipCount(n){ return n===0 ? 1 : n; }
-
-      computeDropSide(clientX, clientY){
-        const rect = this.container.getBoundingClientRect();
-        const cx = rect.left + rect.width/2;
-        if(clientX < cx - rect.width*0.15) return 'left';
-        if(clientX > cx + rect.width*0.15) return 'right';
-        return 'middle';
-      }
-
-      requestPlace(handIndex, side, clientX, clientY){
-        const coords = { x: clientX, y: clientY };
-        return this.onPlaceRequest(handIndex, side, coords);
-      }
+    _startDrag(ev, el, handIndex){
+      if(this.engine.currentTurn!=='player') return;
+      ev.preventDefault();
+      el.setPointerCapture(ev.pointerId);
+      el.classList.add('dragging');
+      const rect = el.getBoundingClientRect();
+      const offsetX = ev.clientX - rect.left, offsetY = ev.clientY - rect.top;
+      let last = {x:ev.clientX,y:ev.clientY, t:performance.now()};
+      let vx=0, vy=0;
+      const move = (m)=>{
+        vx = m.clientX - last.x; vy = m.clientY - last.y; last = {x:m.clientX,y:m.clientY,t:performance.now()};
+        el.style.position='fixed'; el.style.left = `${m.clientX - offsetX}px`; el.style.top = `${m.clientY - offsetY}px`;
+      };
+      const up = (u)=>{
+        try{ el.releasePointerCapture(ev.pointerId); }catch(_){}
+        el.classList.remove('dragging');
+        document.removeEventListener('pointermove', move);
+        document.removeEventListener('pointerup', up);
+        // compute drop side
+        const boardRect = document.getElementById('boardCanvas').getBoundingClientRect();
+        const cx = boardRect.left + boardRect.width/2;
+        const side = (u.clientX < cx)?'left':'right';
+        const res = this.engine.attemptPlaceFromPlayer(handIndex, side, {x:u.clientX,y:u.clientY});
+        if(res && res.success){ if(this._soundOn) this.audio.play('clack'); } else {
+          // inertia snap-back animation
+          const startLeft = parseFloat(el.style.left || 0), startTop = parseFloat(el.style.top || 0);
+          const duration = 260; const start = performance.now();
+          const origStyleLeft = ''; const origStyleTop = '';
+          const animate = (t)=>{
+            const p = Math.min(1,(t-start)/duration);
+            const ease = 1 - Math.pow(1-p,3);
+            el.style.left = `${startLeft + (0 - startLeft) * ease}px`;
+            el.style.top = `${startTop + (0 - startTop) * ease}px`;
+            if(p<1) requestAnimationFrame(animate); else { el.style.left=''; el.style.top=''; }
+          };
+          requestAnimationFrame(animate);
+          if(this._soundOn) this.audio.play('error');
+        }
+      };
+      document.addEventListener('pointermove', move);
+      document.addEventListener('pointerup', up, {once:true});
     }
 
-    /* ============================
-       UI (hand rendering, drag/drop, interactions)
-       ============================ */
-    class UI {
-      constructor(opts = {}){
-        this.engine = opts.engine;
-        this.board = opts.board;
-        this.audio = opts.audio;
-        this.elements = opts.elements || {};
-        this.playerHandEl = this.elements.playerHand;
-        this.boneyardCountEl = this.elements.boneyardCount;
-        this.boneStackEl = this.elements.boneStack;
-        this.roundNumberEl = this.elements.roundNumber;
-        this.playerScoreEl = this.elements.playerScore;
-        this.aiScoreEl = this.elements.aiScore;
-        this.turnIndicatorEl = this.elements.turnIndicator;
-        this.statusTextEl = this.elements.statusText;
-        this.modalRoot = this.elements.modalRoot;
-        this.confettiCanvas = this.elements.confettiCanvas;
-        this.firstMoveTooltip = this.elements.firstMoveTooltip;
-
-        this._bindEngineEvents();
-        this._bindBoardUI();
-      }
-
-      _bindEngineEvents(){
-        this.engine.on('state', (s)=> this.updateFromState(s));
-        this.engine.on('tilePlaced', (info)=> {
-          this.flashStatus(`${info.by === 'player' ? 'أنت' : 'الخصم'} لعب ${info.tile.a}-${info.tile.b}`);
-          this.board.updateFromState(this.engine.getState());
-        });
-        this.engine.on('draw', ()=> {
-          this.updateFromState(this.engine.getState());
-        });
-        this.engine.on('victory', (winner)=> {
-          this.showVictory(winner);
-        });
-      }
-
-      _bindBoardUI(){
-        if(this.boneStackEl){
-          this.boneStackEl.addEventListener('click', ()=>{
-            if(this.engine.canPlayerDraw()){
-              const tile = this.engine.playerDraw();
-              if(tile){
-                this.flashStatus('سحبت قطعة');
-                this.audio.play('slide', { gain: 0.08 });
-              } else {
-                this.flashStatus('البونيارد فارغ');
-                this.audio.play('error', { gain: 0.06 });
-              }
-            }
-          });
-        }
-      }
-
-      updateFromState(state){
-        this._renderHand(state.hands.player);
-        this._updateBoneyard(state.boneyard.length);
-        this._updateScores(state.scores);
-        this._updateRound(state.round);
-        this._updateTurn(state.currentTurn);
-      }
-
-      _renderHand(hand){
-        this.playerHandEl.innerHTML = '';
-        hand.forEach((tile, idx)=>{
-          const el = document.createElement('div');
-          el.className = 'domino hand-tile';
-          el.dataset.index = idx;
-          el.dataset.tileId = tile.id;
-          el.style.width = `${parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tile-w')) || 96}px`;
-          el.style.height = `${parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tile-h')) || 56}px`;
-
-          const left = document.createElement('div'); left.className = 'half pips-'+tile.a;
-          for(let i=0;i<this._pipCount(tile.a);i++){ const p=document.createElement('div'); p.className='pip'; left.appendChild(p); }
-          const div = document.createElement('div'); div.className = 'divider';
-          const stud = document.createElement('div'); stud.className='stud'; div.appendChild(stud);
-          const right = document.createElement('div'); right.className = 'half pips-'+tile.b;
-          for(let i=0;i<this._pipCount(tile.b);i++){ const p=document.createElement('div'); p.className='pip'; right.appendChild(p); }
-          el.appendChild(left); el.appendChild(div); el.appendChild(right);
-
-          el.addEventListener('pointermove', (ev)=> this._onTilePointerMove(ev, el));
-          el.addEventListener('pointerleave', ()=> this._onTilePointerLeave(el));
-          el.addEventListener('pointerdown', (ev)=> this._onTilePointerDown(ev, el, idx));
-          el.addEventListener('click', (ev)=> this._onTileClick(ev, el, idx));
-
-          this.playerHandEl.appendChild(el);
-        });
-      }
-
-      _pipCount(n){ return n===0 ? 1 : n; }
-
-      _updateBoneyard(count){ if(this.boneyardCountEl) this.boneyardCountEl.textContent = count; }
-      _updateScores(scores){ if(this.playerScoreEl) this.playerScoreEl.textContent = scores.player; if(this.aiScoreEl) this.aiScoreEl.textContent = scores.ai; }
-      _updateRound(r){ if(this.roundNumberEl) this.roundNumberEl.textContent = r; }
-      _updateTurn(turn){
-        if(this.turnIndicatorEl) this.turnIndicatorEl.textContent = turn === 'player' ? 'دورك' : 'دور AI';
-        if(this.statusTextEl) this.statusTextEl.textContent = turn === 'player' ? 'قم بالحركة' : 'الخصم يفكر';
-      }
-
-      flashStatus(msg){
-        if(this.statusTextEl) this.statusTextEl.textContent = msg;
-        setTimeout(()=> {
-          const s = this.engine.getState();
-          this._updateTurn(s.currentTurn);
-        }, 1400);
-      }
-
-      showVictory(winner){
-        this.modalRoot.innerHTML = '';
-        const modal = document.createElement('div'); modal.className = 'modal';
-        modal.style.position = 'fixed';
-        modal.style.inset = '0';
-        modal.style.display = 'flex';
-        modal.style.alignItems = 'center';
-        modal.style.justifyContent = 'center';
-        modal.style.zIndex = 2000;
-        const card = document.createElement('div'); card.className = 'modal-card';
-        card.style.background = 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))';
-        card.style.borderRadius = '12px';
-        card.style.padding = '18px';
-        card.style.boxShadow = '0 30px 80px rgba(0,0,0,0.7)';
-        card.innerHTML = `<h2 style="margin:0 0 8px 0">${winner === 'player' ? 'البطل — أنت!' : 'البطل — AI'}</h2>
-          <p style="color:var(--muted); margin:8px 0 12px 0;">انتهت المباراة — النتيجة النهائية</p>
-          <div style="font-size:20px; font-weight:900; margin:8px 0; color:var(--accent);">أنت: ${this.engine.scores.player} • AI: ${this.engine.scores.ai}</div>
-          <div style="display:flex; gap:12px; justify-content:center; margin-top:12px;">
-            <button id="play-again" class="btn">العب مرة أخرى</button>
-            <button id="close-match" class="btn">إغلاق</button>
-          </div>`;
-        modal.appendChild(card);
-        this.modalRoot.appendChild(modal);
-        this.modalRoot.style.display = 'block';
-        this.modalRoot.setAttribute('aria-hidden','false');
-
-        card.querySelector('#play-again').addEventListener('click', ()=>{
-          this.modalRoot.style.display = 'none';
-          this.modalRoot.innerHTML = '';
-          this.engine.startRound(true);
-        });
-        card.querySelector('#close-match').addEventListener('click', ()=>{
-          this.modalRoot.style.display = 'none';
-          this.modalRoot.innerHTML = '';
-        });
-      }
-
-      _onTilePointerMove(e, el){
-        const rect = el.getBoundingClientRect();
-        const cx = rect.left + rect.width/2;
-        const cy = rect.top + rect.height/2;
-        const dx = (e.clientX - cx) / rect.width;
-        const dy = (e.clientY - cy) / rect.height;
-        const rx = dy * 6;
-        const ry = -dx * 8;
-        el.style.transform = `perspective(800px) rotateX(${rx}deg) rotateY(${ry}deg) translateZ(8px)`;
-      }
-      _onTilePointerLeave(el){
-        el.style.transform = `perspective(800px) rotateX(2deg) rotateY(-1deg) translateZ(0)`;
-      }
-
-      _onTilePointerDown(e, el, handIndex){
-        if(this.engine.currentTurn !== 'player' || this.engine.animLock) return;
-        e.preventDefault();
-        el.setPointerCapture(e.pointerId);
-        el.classList.add('dragging');
-        const startX = e.clientX;
-        const startY = e.clientY;
-        const origRect = el.getBoundingClientRect();
-        const offsetX = startX - origRect.left;
-        const offsetY = startY - origRect.top;
-
-        const move = (ev)=>{
-          el.style.position = 'fixed';
-          el.style.left = `${ev.clientX - offsetX}px`;
-          el.style.top = `${ev.clientY - offsetY}px`;
-          const side = this.board.computeDropSide(ev.clientX, ev.clientY);
-          const hintLeft = document.getElementById('hint-left');
-          const hintRight = document.getElementById('hint-right');
-          if(hintLeft && hintRight){
-            hintLeft.classList.remove('show'); hintRight.classList.remove('show');
-            if(side === 'left') hintLeft.classList.add('show');
-            if(side === 'right') hintRight.classList.add('show');
-          }
-        };
-
-        const up = (ev)=>{
-          try{ el.releasePointerCapture(e.pointerId); }catch(_){}
-          el.classList.remove('dragging');
-          document.removeEventListener('pointermove', move);
-          document.removeEventListener('pointerup', up);
-          const side = this.board.computeDropSide(ev.clientX, ev.clientY);
-          const result = this.board.requestPlace(handIndex, side, ev.clientX, ev.clientY);
-          if(result && result.success){
-            this.audio.play('clack', { gain: 0.12 });
-          } else {
-            el.style.transition = 'left 260ms cubic-bezier(.2,.9,.3,1), top 260ms cubic-bezier(.2,.9,.3,1), transform 260ms';
-            el.style.left = '';
-            el.style.top = '';
-            setTimeout(()=> { el.style.transition = ''; }, 300);
-            this.audio.play('error', { gain: 0.06 });
-          }
-          const hintLeft = document.getElementById('hint-left');
-          const hintRight = document.getElementById('hint-right');
-          if(hintLeft) hintLeft.classList.remove('show');
-          if(hintRight) hintRight.classList.remove('show');
-        };
-
-        document.addEventListener('pointermove', move);
-        document.addEventListener('pointerup', up, { once:true });
-      }
-
-      _onTileClick(e, el, handIndex){
-        const rect = this.board.container.getBoundingClientRect();
-        const cx = rect.left + rect.width/2;
-        const side = (e.clientX < cx) ? 'left' : 'right';
-        const result = this.board.requestPlace(handIndex, side, e.clientX, e.clientY);
-        if(result && result.success){
-          this.audio.play('clack', { gain: 0.12 });
-        } else {
-          this.flashStatus('القطعة غير قابلة للعب');
-          this.audio.play('error', { gain: 0.06 });
-        }
-      }
+    _onClickPlay(ev, handIndex){
+      if(this.engine.currentTurn!=='player') return;
+      const boardRect = document.getElementById('boardCanvas').getBoundingClientRect();
+      const cx = boardRect.left + boardRect.width/2;
+      const side = (ev.clientX < cx)?'left':'right';
+      const res = this.engine.attemptPlaceFromPlayer(handIndex, side, {x:ev.clientX,y:ev.clientY});
+      if(res && res.success){ if(this._soundOn) this.audio.play('clack'); } else { this._flash('القطعة غير قابلة للعب'); if(this._soundOn) this.audio.play('error'); }
     }
 
-    /* ============================
-       Confetti helper
-       ============================ */
-    function startConfetti(canvas){
-      if(!canvas) return;
-      canvas.style.display='block';
-      canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-      const ctx = canvas.getContext('2d'); const pieces=[];
-      const colors = ['#ffd166','#7ef9ff','#ff7ab6','#9bffb8','#ffd1a9'];
-      for(let i=0;i<120;i++){
-        pieces.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height - canvas.height, w: 6 + Math.random()*10, h: 6 + Math.random()*10, vx: -2 + Math.random()*4, vy: 2 + Math.random()*6, r: Math.random()*360, vr: -6 + Math.random()*12, color: colors[Math.floor(Math.random()*colors.length)], opacity: 0.8 + Math.random()*0.2 });
-      }
-      let anim = null;
-      (function loop(){ ctx.clearRect(0,0,canvas.width,canvas.height); pieces.forEach(p=>{ p.x += p.vx; p.y += p.vy; p.r += p.vr; ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.r * Math.PI/180); ctx.fillStyle = p.color; ctx.globalAlpha = p.opacity; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore(); if(p.y > canvas.height + 40){ p.y = -40; p.x = Math.random()*canvas.width; } }); anim = requestAnimationFrame(loop); })();
-      setTimeout(()=>{ if(anim) cancelAnimationFrame(anim); canvas.style.display='none'; }, 6000);
+    _onHoverTilt(ev, el){
+      const rect = el.getBoundingClientRect();
+      const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+      const dx = (ev.clientX - cx)/rect.width, dy = (ev.clientY - cy)/rect.height;
+      const rx = dy * 6, ry = -dx * 8;
+      el.style.transform = `perspective(800px) rotateX(${rx}deg) rotateY(${ry}deg) translateZ(8px)`;
     }
 
-    /* ============================
-       Bootstrap: initialize everything
-       ============================ */
-    (function bootstrap(){
-      const audio = AudioManager();
-      audio.setMasterVolume(0.9);
+    _flash(msg){
+      this.statusText.textContent = msg;
+      setTimeout(()=>{ const s=this.engine.getState(); this.statusText.textContent = s.currentTurn==='player'?'قم بالحركة':'الخصم يفكر'; }, 1400);
+    }
 
-      const engine = new Engine({ targetScore: 101 });
+    _onVictory(winner){
+      if(this._soundOn) this.audio.play('fanfare');
+      this._showModal(winner==='player'?'فزت!':'فاز AI', `النقاط: أنت ${this.engine.scores.player} • AI ${this.engine.scores.ai}`);
+    }
 
-      const board = new Board({
-        container: document.getElementById('board-canvas'),
-        tileWidth: parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tile-w')) || 96,
-        tileHeight: parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tile-h')) || 56,
-        onPlaceRequest: (handIndex, side, coords) => {
-          const result = engine.attemptPlaceFromPlayer(handIndex, side, coords);
-          if(result.success){
-            audio.play('clack', { gain: 0.12, pitch: 1 + (result.tile.a + result.tile.b)/24 });
-          } else {
-            audio.play('error', { gain: 0.06 });
-          }
-          return result;
-        }
-      });
+    _showModal(title, text){
+      this.modalRoot.innerHTML = '';
+      const card = document.createElement('div'); card.className='modal-card';
+      card.innerHTML = `<h3 style="margin:0 0 8px 0">${title}</h3><p style="color:var(--muted)">${text}</p><div style="margin-top:12px;display:flex;gap:8px;justify-content:center"><button id="again" class="btn">العب مرة أخرى</button><button id="close" class="btn">إغلاق</button></div>`;
+      this.modalRoot.appendChild(card); this.modalRoot.style.display='flex';
+      card.querySelector('#again').addEventListener('click', ()=>{ this.modalRoot.style.display='none'; this.engine.resetMatch(); });
+      card.querySelector('#close').addEventListener('click', ()=>{ this.modalRoot.style.display='none'; });
+    }
 
-      const ui = new UI({
-        engine,
-        board,
-        audio,
-        elements: {
-          playerHand: document.getElementById('player-hand'),
-          boneyardCount: document.getElementById('boneyard-count'),
-          boneStack: document.getElementById('bone-stack'),
-          roundNumber: document.getElementById('round-number'),
-          playerScore: document.getElementById('player-score'),
-          aiScore: document.getElementById('ai-score'),
-          turnIndicator: document.getElementById('turn-indicator'),
-          statusText: document.getElementById('status-text'),
-          modalRoot: document.getElementById('modal-root'),
-          confettiCanvas: document.getElementById('confetti'),
-          firstMoveTooltip: document.getElementById('first-move-tooltip')
-        }
-      });
+    _toggleTheme(){
+      this._theme = this._theme==='ivory'?'obsidian':'ivory';
+      if(this._theme==='ivory'){ document.documentElement.style.setProperty('--ivory','#fbf7ef'); this.themeBtn.textContent='ثيم: عاجي'; } else { document.documentElement.style.setProperty('--ivory','#0b0b0d'); this.themeBtn.textContent='ثيم: أسود'; }
+      // re-render board to reflect material change
+      this.board.scheduleRender();
+    }
 
-      engine.on('state', (state) => {
-        ui.updateFromState(state);
-        board.updateFromState(state);
-      });
+    _toggleSound(){ this._soundOn = !this._soundOn; this.soundBtn.textContent = this._soundOn ? 'الصوت: تشغيل' : 'الصوت: إيقاف'; }
 
-      engine.on('roundStart', (info) => {
-        audio.play('shuffle', { gain: 0.06 });
-        setTimeout(()=> audio.stop('shuffle'), 900);
-      });
+    _fpsLoop(){
+      let frames=0,last=performance.now();
+      setInterval(()=>{ this.debugEl.textContent = `FPS: ${frames}`; frames=0; },1000);
+      const tick=()=>{ frames++; requestAnimationFrame(tick); }; requestAnimationFrame(tick);
+    }
+  }
 
-      engine.on('tilePlaced', (info) => {
-        audio.play('clack', { gain: 0.12, pitch: 1 + (info.tile.a + info.tile.b)/24 });
-        board.updateFromState(engine.getState());
-      });
+  /* ============================
+     Wiring & Boot
+     ============================ */
+  (function boot(){
+    const canvas = document.getElementById('boardCanvas');
+    function fitCanvas(){ canvas.style.width = canvas.parentElement.clientWidth - 28 + 'px'; canvas.style.height = canvas.parentElement.clientHeight - 28 + 'px'; }
+    fitCanvas(); window.addEventListener('resize', fitCanvas);
 
-      engine.on('draw', (payload) => {
-        audio.play('slide', { gain: 0.08 });
-      });
+    const audio = AudioManager();
+    const engine = new Engine();
+    const board = new BoardRenderer(canvas, engine);
+    // wire board.requestPlace to engine
+    board.requestPlace = (handIndex, side, clientX, clientY) => engine.attemptPlaceFromPlayer(handIndex, side, {x:clientX,y:clientY});
+    const ui = new UIController(engine, board, audio);
 
-      engine.on('victory', (winner) => {
-        audio.play('fanfare', { gain: 0.18 });
-        startConfetti(document.getElementById('confetti'));
-        ui.showVictory(winner);
-      });
+    engine.on('state', ()=> board.scheduleRender());
+    engine.on('roundStart', ()=> { if(ui._soundOn) audio.play('shuffle'); setTimeout(()=> audio.stop('shuffle'), 900); });
 
-      document.getElementById('reset-match').addEventListener('click', () => {
-        if(confirm('إعادة المباراة وإعادة ضبط النقاط؟')) engine.resetMatch();
-      });
+    // resume audio on first gesture
+    function resumeAudio(){ audio.ctx.resume().catch(()=>{}); document.removeEventListener('pointerdown', resumeAudio); }
+    document.addEventListener('pointerdown', resumeAudio);
 
-      document.getElementById('bone-stack').addEventListener('click', () => {
-        if(engine.canPlayerDraw()){
-          const tile = engine.playerDraw();
-          if(tile){
-            ui.flashStatus('سحبت قطعة');
-            audio.play('slide', { gain: 0.08 });
-          } else {
-            ui.flashStatus('البونيارد فارغ');
-            audio.play('error', { gain: 0.06 });
-          }
-        }
-      });
+    engine.resetMatch();
+    board.renderImmediate();
 
-      // Start
-      engine.initMatch();
-
-      // Expose for debugging
-      window.DOMINO = { engine, board, ui, audio };
-    })();
+    // expose for debugging
+    window.DOMINO = { engine, board, ui, audio };
+  })();
   </script>
 </body>
-    </html>
+</html>

@@ -1,0 +1,1092 @@
+here<!doctype html>
+<html lang="ar">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dominoes — Wood Table Single File</title>
+
+  <style>
+    :root{
+      --bg-dark-1:#0b0705;
+      --wood-1:#3b2a12;
+      --wood-2:#6b4a2a;
+      --felt-1:#0b2a1f;
+      --ivory:#fbf7ef;
+      --pip-black:#0b0b0b;
+      --muted:#8f9aa6;
+      --accent:#ffd166;
+      --tile-w:96px;
+      --tile-h:56px;
+      --tile-gap:12px;
+      --ui-radius:12px;
+      --card-shadow: 0 30px 90px rgba(0,0,0,0.75);
+    }
+
+    /* Page */
+    html,body{ height:100%; margin:0; background: linear-gradient(180deg,var(--bg-dark-1), #070505); font-family: Inter, system-ui, "Noto Naskh Arabic", Arial; color:#efece6; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; direction: rtl; }
+    .app-wrap{ max-width:1280px; margin:28px auto; padding:18px; box-sizing:border-box; }
+
+    /* Scoreboard */
+    .scoreboard{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px; border-radius:14px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.03); box-shadow: var(--card-shadow); }
+    .score-left, .score-right{ display:flex; gap:12px; align-items:center; }
+    .score-card{ padding:10px 14px; border-radius:10px; background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00)); min-width:140px; text-align:center; border:1px solid rgba(255,255,255,0.02); }
+    .score-card h4{ margin:0; color:var(--accent); font-weight:800; font-size:13px; }
+    .score-card p{ margin:6px 0 0 0; font-weight:900; font-size:20px; color:#fff; }
+    .round-number{ font-weight:800; font-size:18px; }
+
+    /* Buttons */
+    .btn{ background:transparent; border:1px solid rgba(255,255,255,0.04); padding:8px 12px; border-radius:10px; color:var(--ivory); font-weight:700; cursor:pointer; transition: transform 160ms ease; }
+    .btn:active{ transform: translateY(1px) scale(0.998); }
+
+    /* Board wrap */
+    .board-wrap{ margin-top:18px; border-radius:18px; padding:18px; position:relative; overflow:hidden; border:1px solid rgba(255,255,255,0.02); box-shadow: var(--card-shadow); background: linear-gradient(180deg,#0b0604 0%, #0b0705 100%); min-height:520px; }
+
+    .board-wrap::before{
+      content:"";
+      position:absolute; inset:8px; border-radius:14px; pointer-events:none;
+      background:
+        linear-gradient(180deg, rgba(0,0,0,0.25), rgba(255,255,255,0.02)),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 6px);
+      mix-blend-mode:overlay;
+      box-shadow: inset 0 0 0 8px rgba(0,0,0,0.45);
+    }
+
+    /* Board canvas: polished walnut wood with inset felt playing area */
+    .board-canvas{
+      position:relative;
+      width:100%;
+      height:420px;
+      border-radius:12px;
+      margin:0 auto;
+      overflow:hidden;
+      background:
+        linear-gradient(180deg, #5a3f26 0%, #3b2a12 60%),
+        radial-gradient(800px 200px at 50% 10%, rgba(255,255,255,0.02), transparent 10%);
+      box-shadow: inset 0 6px 30px rgba(0,0,0,0.6);
+      border:1px solid rgba(255,255,255,0.02);
+    }
+
+    .board-canvas::after{
+      content:"";
+      position:absolute; inset:0; border-radius:12px; pointer-events:none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400'><defs><filter id='g'><feTurbulence baseFrequency='0.02' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter></defs><rect width='100%' height='100%' filter='url(%23g)' opacity='0.06' fill='%23000000'/></svg>");
+      mix-blend-mode:overlay;
+      opacity:0.9;
+    }
+
+    /* Placement hints */
+    .placement-hints{ position:absolute; top:12px; left:12px; display:flex; gap:8px; z-index:20; pointer-events:none; }
+    .hint-dot{ width:12px; height:12px; border-radius:50%; background: linear-gradient(180deg,#ffd88a,#ffd166); box-shadow: 0 6px 18px rgba(255,209,102,0.12); opacity:0; transform:scale(.6); transition: all 180ms cubic-bezier(.2,.9,.3,1); }
+    .hint-dot.show{ opacity:1; transform:scale(1); }
+
+    /* Boneyard UI */
+    .boneyard-ui{ position:absolute; right:18px; top:18px; display:flex; gap:8px; align-items:center; z-index:30; color:var(--muted); }
+    .bone-stack{ width:72px; height:44px; border-radius:8px; background: linear-gradient(180deg,#2b1f18,#1a120b); border:1px solid rgba(255,255,255,0.03); box-shadow: 0 8px 20px rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; color:var(--muted); font-weight:700; font-size:13px; cursor:pointer; user-select:none; }
+
+    /* Hand area */
+    .hand{ position:fixed; left:0; right:0; bottom:0; background: linear-gradient(180deg, rgba(2,6,12,0.6), rgba(2,6,12,0.85)); border-top:1px solid rgba(255,255,255,0.02); padding:14px 18px; display:flex; align-items:center; justify-content:center; gap:12px; z-index:60; }
+    .hand-inner{ display:flex; gap:12px; align-items:center; justify-content:center; max-width:100%; overflow:auto; padding:6px; }
+
+    /* Tile base style (white ivory look) */
+    .tile, .domino{
+      width: var(--tile-w);
+      height: var(--tile-h);
+      border-radius:10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:8px;
+      gap:8px;
+      position:absolute;
+      transform-origin:center;
+      transition: transform 220ms cubic-bezier(.2,.9,.3,1), box-shadow 180ms ease, left 220ms linear, top 220ms linear;
+      background: linear-gradient(180deg, var(--ivory) 0%, #f3efe3 40%, #e9dfc8 100%);
+      border: 1px solid rgba(0,0,0,0.08);
+      box-shadow:
+        0 18px 40px rgba(2,6,12,0.6),
+        0 6px 18px rgba(2,6,12,0.45),
+        inset 0 2px 8px rgba(255,255,255,0.6),
+        inset 0 -8px 18px rgba(0,0,0,0.06);
+      color: var(--pip-black);
+      user-select:none;
+      -webkit-user-select:none;
+      will-change: transform, left, top;
+    }
+
+    /* For hand tiles (not on board) we use relative positioning */
+    .domino.hand-tile{ position:relative; left:auto; top:auto; margin:0; cursor:grab; transition: transform 160ms ease, box-shadow 160ms ease; }
+
+    /* halves and divider */
+    .tile .half, .domino .half{ flex:1; display:flex; align-items:center; justify-content:center; gap:6px; height:100%; }
+    .tile .divider, .domino .divider{
+      width:4px; height:80%; border-radius:4px; display:flex; align-items:center; justify-content:center;
+      background: linear-gradient(180deg, rgba(0,0,0,0.12), rgba(255,255,255,0.06));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+    }
+
+    /* metallic stud */
+    .tile .stud, .domino .stud{
+      width:10px; height:10px; border-radius:50%;
+      background: radial-gradient(circle at 30% 25%, #fff9e6 0%, #d4af37 20%, #8b6b2f 60%, #3b2a12 100%);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.6);
+    }
+
+    /* pips: deep engraved black dots */
+    .tile .pip, .domino .pip{
+      width:10px; height:10px; border-radius:50%;
+      background:
+        radial-gradient(circle at 35% 30%, rgba(255,255,255,0.06), rgba(255,255,255,0.02) 6%),
+        radial-gradient(circle at 50% 60%, rgba(0,0,0,0.95), rgba(0,0,0,0.85) 40%, rgba(0,0,0,0.6) 60%);
+      box-shadow:
+        inset 0 2px 6px rgba(255,255,255,0.02),
+        inset 0 -6px 10px rgba(0,0,0,0.6),
+        0 2px 6px rgba(0,0,0,0.25);
+      transform: translateZ(-2px);
+    }
+
+    /* playable highlight */
+    .tile.playable, .domino.playable{
+      transform: translateZ(12px) scale(1.04);
+      box-shadow: 0 40px 100px rgba(0,0,0,0.9), 0 0 24px rgba(0,0,0,0.06);
+      outline: 2px solid rgba(255,255,255,0.02);
+    }
+
+    /* dragging state */
+    .tile.dragging, .domino.dragging{
+      transform: translateZ(20px) scale(1.08) rotate(-2deg);
+      box-shadow: 0 60px 140px rgba(0,0,0,0.95);
+      z-index:1200;
+    }
+
+    /* tooltip & modal */
+    .hint-tooltip{ position:absolute; bottom:84px; left:50%; transform:translateX(-50%); background: rgba(10,14,20,0.92); border:1px solid rgba(255,255,255,0.04); padding:10px 14px; border-radius:10px; color:var(--muted); font-size:13px; z-index:60; box-shadow: 0 10px 30px rgba(0,0,0,0.6); opacity:0; transition: opacity 180ms; pointer-events:none; }
+    .hint-tooltip.show{ opacity:1; pointer-events:auto; }
+
+    /* confetti canvas */
+    .confetti-canvas{ position:fixed; inset:0; pointer-events:none; z-index:90; display:none; }
+
+    /* responsive */
+    @media (max-width: 720px){
+      :root{ --tile-w:72px; --tile-h:44px; --tile-gap:8px; }
+      .board-canvas{ height:320px; }
+      .app-wrap{ padding:12px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="app-wrap" aria-live="polite">
+    <header class="scoreboard" role="region" aria-label="Scoreboard">
+      <div class="score-left">
+        <div class="score-card">
+          <h4>اللاعب</h4>
+          <p id="player-score">0</p>
+          <div class="muted">من 101</div>
+        </div>
+        <div class="score-card">
+          <h4>الخصم (AI)</h4>
+          <p id="ai-score">0</p>
+          <div class="muted">من 101</div>
+        </div>
+      </div>
+
+      <div class="score-center">
+        <div class="muted">الجولة</div>
+        <div id="round-number" class="round-number">1</div>
+      </div>
+
+      <div class="score-right">
+        <button id="reset-match" class="btn">إعادة المباراة</button>
+        <div class="status">
+          <div id="turn-indicator">—</div>
+          <div id="status-text" class="muted">مرحبًا — ابدأ اللعب</div>
+        </div>
+      </div>
+    </header>
+
+    <main class="board-wrap" id="board-wrap" role="application" aria-label="لوحة الدومينو">
+      <div id="board-canvas" class="board-canvas" aria-hidden="false"></div>
+
+      <div id="placement-hints" class="placement-hints" aria-hidden="true">
+        <div id="hint-left" class="hint-dot"></div>
+        <div id="hint-right" class="hint-dot"></div>
+      </div>
+
+      <div id="boneyard-ui" class="boneyard-ui" aria-label="البونيارد">
+        <div id="bone-stack" class="bone-stack" title="اسحب قطعة">البونيارد</div>
+        <div id="boneyard-count" class="muted">28</div>
+      </div>
+
+      <div id="first-move-tooltip" class="hint-tooltip" aria-hidden="true"></div>
+    </main>
+
+    <aside class="hand" id="player-hand-area" aria-label="يد اللاعب">
+      <div class="hand-inner" id="player-hand" role="list"></div>
+    </aside>
+
+    <div id="modal-root" class="modal-root" aria-hidden="true"></div>
+
+    <canvas id="confetti" class="confetti-canvas" width="1920" height="1080" aria-hidden="true"></canvas>
+  </div>
+
+  <script type="module">
+    /* ============================
+       Audio Manager (WebAudio synthesis)
+       ============================ */
+    function AudioManager(){
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const master = ctx.createGain(); master.gain.value = 0.9; master.connect(ctx.destination);
+      let shuffleInterval = null;
+      function now(){ return ctx.currentTime; }
+      function resumeIfNeeded(){ if(ctx.state === 'suspended') ctx.resume().catch(()=>{}); }
+
+      function playClack(opts = {}){
+        resumeIfNeeded();
+        const gainVal = opts.gain ?? 0.12;
+        const pitch = opts.pitch ?? 1.0;
+        const t = now();
+        const o1 = ctx.createOscillator(); o1.type = 'triangle'; o1.frequency.value = 120 * pitch;
+        const o2 = ctx.createOscillator(); o2.type = 'square'; o2.frequency.value = 180 * pitch;
+        const g = ctx.createGain(); g.gain.value = 0.0001;
+        const hpf = ctx.createBiquadFilter(); hpf.type = 'highpass'; hpf.frequency.value = 800;
+        const lpf = ctx.createBiquadFilter(); lpf.type = 'lowpass'; lpf.frequency.value = 6000;
+        o1.connect(g); o2.connect(g); g.connect(hpf); hpf.connect(lpf); lpf.connect(master);
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(gainVal, t + 0.005);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+        o1.start(t); o2.start(t); o1.stop(t + 0.22); o2.stop(t + 0.22);
+
+        const bufferSize = Math.floor(ctx.sampleRate * 0.06);
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const out = noiseBuffer.getChannelData(0);
+        for(let i=0;i<bufferSize;i++) out[i] = (Math.random()*2-1) * Math.exp(-i/(ctx.sampleRate*0.02));
+        const noise = ctx.createBufferSource(); noise.buffer = noiseBuffer;
+        const ng = ctx.createGain(); ng.gain.value = gainVal * 0.6;
+        const nf = ctx.createBiquadFilter(); nf.type = 'bandpass'; nf.frequency.value = 3000;
+        noise.connect(nf); nf.connect(ng); ng.connect(master);
+        noise.start(t); noise.stop(t + 0.12);
+      }
+
+      function playSlide(opts = {}){
+        resumeIfNeeded();
+        const gainVal = opts.gain ?? 0.08;
+        const t = now();
+        const len = Math.floor(ctx.sampleRate * 0.9);
+        const buffer = ctx.createBuffer(1, len, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for(let i=0;i<len;i++) data[i] = (Math.random()*2-1) * (1 - i/len) * 0.6;
+        const src = ctx.createBufferSource(); src.buffer = buffer;
+        const g = ctx.createGain(); g.gain.value = 0.0001;
+        const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1200;
+        src.connect(bp); bp.connect(g); g.connect(master);
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.linearRampToValueAtTime(gainVal, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+        src.start(t); src.stop(t + 1.0);
+      }
+
+      function startShuffle(opts = {}){
+        resumeIfNeeded();
+        const gainVal = opts.gain ?? 0.06;
+        if(shuffleInterval) return;
+        shuffleInterval = setInterval(()=> playClack({ gain: gainVal, pitch: 0.9 + Math.random()*0.2 }), 140);
+      }
+      function stopShuffle(){ if(shuffleInterval){ clearInterval(shuffleInterval); shuffleInterval = null; } }
+
+      function playFanfare(opts = {}){
+        resumeIfNeeded();
+        const gainVal = opts.gain ?? 0.18;
+        const t = now() + 0.02;
+        const notes = [880, 1100, 1320, 1760];
+        notes.forEach((freq, i)=>{
+          const o = ctx.createOscillator(); o.type = 'sine';
+          const g = ctx.createGain(); g.gain.value = 0.0001;
+          const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 6000;
+          o.frequency.setValueAtTime(freq, t + i*0.08);
+          o.connect(f); f.connect(g); g.connect(master);
+          g.gain.setValueAtTime(0.0001, t + i*0.08);
+          g.gain.exponentialRampToValueAtTime(gainVal * (1 - i*0.12), t + i*0.08 + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + i*0.08 + 1.2);
+          o.start(t + i*0.08); o.stop(t + i*0.08 + 1.2);
+        });
+        const bell = ctx.createOscillator(); bell.type = 'triangle'; bell.frequency.value = 1760;
+        const bg = ctx.createGain(); bg.gain.value = 0.0001;
+        const bf = ctx.createBiquadFilter(); bf.type = 'highpass'; bf.frequency.value = 800;
+        bell.connect(bf); bf.connect(bg); bg.connect(master);
+        bg.gain.setValueAtTime(0.0001, t);
+        bg.gain.exponentialRampToValueAtTime(gainVal*0.6, t + 0.02);
+        bg.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
+        bell.start(t); bell.stop(t + 1.6);
+      }
+
+      function playError(opts = {}){ playClack({ gain: opts.gain ?? 0.06, pitch: 0.6 }); }
+
+      return {
+        play(name, opts = {}){
+          if(name === 'clack') playClack(opts);
+          else if(name === 'slide') playSlide(opts);
+          else if(name === 'shuffle') startShuffle(opts);
+          else if(name === 'fanfare') playFanfare(opts);
+          else if(name === 'error') playError(opts);
+        },
+        stop(name){
+          if(name === 'shuffle') stopShuffle();
+        },
+        setMasterVolume(v){ master.gain.value = Math.max(0, Math.min(1, v)); },
+        ctx
+      };
+    }
+
+    /* ============================
+       Engine (game logic)
+       ============================ */
+    class Engine {
+      constructor(opts = {}) {
+        this.targetScore = opts.targetScore || 101;
+        this._listeners = new Map();
+        this._initState();
+      }
+      _initState(){
+        this.deck = [];
+        this.boneyard = [];
+        this.hands = { player: [], ai: [] };
+        this.train = [];
+        this.currentTurn = null;
+        this.round = 1;
+        this.scores = { player:0, ai:0 };
+        this.roundStarter = null;
+        this.roundWinner = null;
+        this.animLock = false;
+        this.highestDoubleTile = null;
+        this.highestDoubleOwner = null;
+        this.roundFirstMove = true;
+      }
+      on(evt, fn){ if(!this._listeners.has(evt)) this._listeners.set(evt,[]); this._listeners.get(evt).push(fn); }
+      off(evt, fn){ if(!this._listeners.has(evt)) return; this._listeners.set(evt, this._listeners.get(evt).filter(f=>f!==fn)); }
+      emit(evt, payload){ (this._listeners.get(evt) || []).forEach(f=>{ try{ f(payload); }catch(e){console.error(e);} }); }
+
+      buildDeck(){
+        const arr=[];
+        for(let i=0;i<=6;i++) for(let j=i;j<=6;j++) arr.push({a:i,b:j,id:`${i}-${j}`});
+        return arr;
+      }
+      shuffle(arr){
+        for(let i=arr.length-1;i>0;i--){
+          const j = Math.floor(Math.random()*(i+1));
+          [arr[i],arr[j]]=[arr[j],arr[i]];
+        }
+        return arr;
+      }
+
+      initMatch(){
+        this.scores = { player:0, ai:0 };
+        this.round = 1;
+        this.emit('state', this.getState());
+        this.startRound(true);
+      }
+      resetMatch(){ this.initMatch(); }
+
+      startRound(isInitial=false, prevWinner=null){
+        this.deck = this.buildDeck();
+        this.shuffle(this.deck);
+        this.boneyard = [...this.deck];
+        this.train = [];
+        this.hands = { player: [], ai: [] };
+        for(let i=0;i<7;i++){
+          this.hands.player.push(this.boneyard.pop());
+          this.hands.ai.push(this.boneyard.pop());
+        }
+        this.updateHighestDouble();
+        this.roundFirstMove = true;
+        if(isInitial) this.roundStarter = this.determineStarter();
+        else if(prevWinner) this.roundStarter = prevWinner;
+        this.currentTurn = this.roundStarter;
+        this.emit('roundStart', { round: this.round, starter: this.roundStarter, highestDouble: this.highestDoubleTile });
+        this.emit('state', this.getState());
+      }
+
+      determineStarter(){
+        const all = [...this.hands.player.map(t=>({...t,owner:'player'})), ...this.hands.ai.map(t=>({...t,owner:'ai'}))];
+        const doubles = all.filter(t=>t.a===t.b);
+        if(doubles.length){
+          doubles.sort((x,y)=> y.a - x.a);
+          return doubles[0].owner;
+        }
+        all.sort((x,y)=> (y.a+y.b) - (x.a+x.b));
+        return all[0].owner;
+      }
+
+      updateHighestDouble(){
+        const all = [...this.hands.player.map(t=>({...t,owner:'player'})), ...this.hands.ai.map(t=>({...t,owner:'ai'}))];
+        const doubles = all.filter(t=>t.a===t.b);
+        if(doubles.length===0){ this.highestDoubleTile = null; this.highestDoubleOwner = null; return; }
+        doubles.sort((x,y)=> y.a - x.a);
+        this.highestDoubleTile = { a: doubles[0].a, b: doubles[0].b, id: doubles[0].id };
+        this.highestDoubleOwner = doubles[0].owner;
+      }
+
+      attemptPlaceFromPlayer(handIndex, side, coords){
+        if(this.currentTurn !== 'player' || this.animLock) return { success:false, reason:'not-your-turn' };
+        const tile = this.hands.player[handIndex];
+        if(!tile) return { success:false, reason:'no-tile' };
+        if(!this.isTilePlayable(tile, 'player')) return { success:false, reason:'not-playable' };
+        const placement = this._placeTile(tile, 'player', side, coords);
+        if(placement){
+          this.hands.player.splice(handIndex,1);
+          this.roundFirstMove = false;
+          this.emit('tilePlaced', { tile: placement, by:'player' });
+          this._afterPlacement('player');
+          return { success:true, tile: placement };
+        }
+        return { success:false, reason:'invalid-placement' };
+      }
+
+      _placeTile(tile, owner, side='right', coords=null){
+        const placed = { ...tile, owner, isDouble: tile.a===tile.b, id: tile.id, spinner:false };
+        if(this.train.length === 0){
+          placed.dir = { x: 1, y: 0 };
+          placed.index = 0;
+          placed.rot = placed.isDouble ? 0 : 90;
+          if(placed.isDouble) placed.spinner = true;
+          this.train.push(placed);
+          return placed;
+        }
+
+        const spinnerIndex = this.train.findIndex(t=>t.isDouble && t.spinner);
+        if(spinnerIndex >= 0){
+          if(side === 'left'){
+            placed.dir = { x: -1, y: 0 };
+            placed.rot = placed.isDouble ? 0 : 90;
+            this.train.unshift(placed);
+          } else {
+            placed.dir = { x: 1, y: 0 };
+            placed.rot = placed.isDouble ? 0 : 90;
+            this.train.push(placed);
+          }
+          if(placed.isDouble && !this.train.some(t=>t.spinner)) placed.spinner = true;
+          return placed;
+        }
+
+        const leftEnd = this.train[0];
+        const rightEnd = this.train[this.train.length-1];
+        const leftVal = leftEnd.a;
+        const rightVal = rightEnd.b;
+
+        const canLeft = (tile.a === leftVal || tile.b === leftVal);
+        const canRight = (tile.a === rightVal || tile.b === rightVal);
+
+        if(!canLeft && !canRight) return null;
+
+        let targetSide = null;
+        if(canLeft && !canRight) targetSide = 'left';
+        else if(canRight && !canLeft) targetSide = 'right';
+        else targetSide = side || 'right';
+
+        if(targetSide === 'left'){
+          placed.dir = { x: -1, y: 0 };
+          placed.rot = placed.isDouble ? 0 : 90;
+          this.train.unshift(placed);
+        } else {
+          placed.dir = { x: 1, y: 0 };
+          placed.rot = placed.isDouble ? 0 : 90;
+          this.train.push(placed);
+        }
+
+        if(placed.isDouble && !this.train.some(t=>t.spinner)){
+          placed.spinner = true;
+        }
+
+        return placed;
+      }
+
+      _afterPlacement(who){
+        this.emit('state', this.getState());
+
+        if(this.hands.player.length === 0 || this.hands.ai.length === 0){
+          const winner = this.hands.player.length === 0 ? 'player' : 'ai';
+          this.roundWinner = winner;
+          const loser = winner === 'player' ? 'ai' : 'player';
+          const points = this.sumPips(this.hands[loser]);
+          this.scores[winner] += points;
+          this.emit('roundEnd', { winner, points });
+          this.emit('victory', winner);
+          return;
+        }
+
+        const playerPlayable = this.getPlayableTiles(this.hands.player).length > 0;
+        const aiPlayable = this.getPlayableTiles(this.hands.ai).length > 0;
+        if(!playerPlayable && !aiPlayable && this.boneyard.length === 0){
+          const playerPips = this.sumPips(this.hands.player);
+          const aiPips = this.sumPips(this.hands.ai);
+          let winner = null, points = 0;
+          if(playerPips < aiPips){ winner = 'player'; points = aiPips - playerPips; }
+          else if(aiPips < playerPips){ winner = 'ai'; points = playerPips - aiPips; }
+          if(winner){
+            this.scores[winner] += points;
+            this.roundWinner = winner;
+            this.emit('roundEnd', { winner, points, reason:'blocked' });
+            this.emit('victory', winner);
+            return;
+          } else {
+            this.emit('roundEnd', { winner:null, points:0, reason:'tie' });
+            return;
+          }
+        }
+
+        this.currentTurn = (who === 'player') ? 'ai' : 'player';
+        this.emit('state', this.getState());
+        if(this.currentTurn === 'ai') setTimeout(()=> this._aiPlay(), 500);
+      }
+
+      _aiPlay(){
+        if(this.animLock) return;
+        if(this.train.length === 0 && this.roundFirstMove && this.highestDoubleTile && this.highestDoubleOwner === 'ai'){
+          const idx = this.hands.ai.findIndex(t=>t.id === this.highestDoubleTile.id);
+          if(idx >= 0){
+            const tile = this.hands.ai[idx];
+            const placement = this._placeTile(tile, 'ai', 'right', null);
+            if(placement){
+              this.hands.ai.splice(idx,1);
+              this.roundFirstMove = false;
+              this.emit('tilePlaced', { tile: placement, by:'ai' });
+              this._afterPlacement('ai');
+              return;
+            }
+          }
+        }
+
+        const playable = this.getPlayableTiles(this.hands.ai);
+        if(playable.length === 0){
+          if(this.boneyard.length > 0){
+            this.draw('ai');
+            setTimeout(()=> this._aiPlay(), 400);
+            return;
+          } else {
+            this.currentTurn = 'player';
+            this.emit('state', this.getState());
+            this.emit('pass', { who:'ai' });
+            return;
+          }
+        }
+
+        playable.sort((x,y)=>{
+          const xScore = (x.a===x.b?100:0) + (x.a+x.b);
+          const yScore = (y.a===y.b?100:0) + (y.a+y.b);
+          return yScore - xScore;
+        });
+
+        const chosen = playable[0];
+        const idx = this.hands.ai.findIndex(t=>t.id===chosen.id);
+        const placement = this._placeTile(chosen, 'ai', 'right', null);
+        if(placement){
+          this.hands.ai.splice(idx,1);
+          this.emit('tilePlaced', { tile: placement, by:'ai' });
+          this._afterPlacement('ai');
+        }
+      }
+
+      draw(who){
+        if(this.boneyard.length === 0) return null;
+        const tile = this.boneyard.pop();
+        if(who === 'player') this.hands.player.push(tile);
+        else this.hands.ai.push(tile);
+        this.emit('draw', { who, tile });
+        this.emit('state', this.getState());
+        return tile;
+      }
+      playerDraw(){ return this.draw('player'); }
+      canPlayerDraw(){ return this.boneyard.length > 0 && this.currentTurn === 'player' && !this.animLock; }
+
+      isTilePlayable(tile, who){
+        if(this.train.length === 0 && this.roundFirstMove && this.highestDoubleTile){
+          if(this.highestDoubleOwner === who) return tile.id === this.highestDoubleTile.id;
+          return false;
+        }
+        if(this.train.length === 0) return true;
+        const leftEnd = this.train[0].a;
+        const rightEnd = this.train[this.train.length-1].b;
+        return tile.a === leftEnd || tile.b === leftEnd || tile.a === rightEnd || tile.b === rightEnd;
+      }
+
+      getPlayableTiles(hand){
+        return hand.filter(t => this.isTilePlayable(t, hand === this.hands.player ? 'player' : 'ai'));
+      }
+
+      sumPips(hand){ return hand.reduce((s,t)=> s + t.a + t.b, 0); }
+
+      getState(){
+        return {
+          round: this.round,
+          scores: {...this.scores},
+          hands: { player: [...this.hands.player], ai: [...this.hands.ai] },
+          boneyard: [...this.boneyard],
+          train: [...this.train],
+          currentTurn: this.currentTurn,
+          highestDoubleTile: this.highestDoubleTile,
+          highestDoubleOwner: this.highestDoubleOwner,
+          animLock: this.animLock,
+          roundFirstMove: this.roundFirstMove
+        };
+      }
+    }
+
+    /* ============================
+       Board (2D layout & rendering)
+       ============================ */
+    class Board {
+      constructor(opts = {}){
+        this.container = opts.container;
+        this.tileW = opts.tileWidth || 96;
+        this.tileH = opts.tileHeight || 56;
+        this.gap = opts.gap || 12;
+        this.onPlaceRequest = opts.onPlaceRequest || function(){ return { success:false }; };
+        this.placedElements = new Map();
+        this.origin = { x: Math.floor((this.container.clientWidth)/2), y: Math.floor((this.container.clientHeight)/2) };
+        this._init();
+      }
+      _init(){
+        this.container.style.position = 'relative';
+        this.container.innerHTML = '';
+        window.addEventListener('resize', ()=> {
+          this.origin = { x: Math.floor((this.container.clientWidth)/2), y: Math.floor((this.container.clientHeight)/2) };
+          if(this.lastState) this.updateFromState(this.lastState);
+        });
+      }
+
+      computeLayout(train){
+        const layout = [];
+        if(!train || train.length === 0) return layout;
+
+        let x = this.origin.x;
+        let y = this.origin.y;
+        let dir = { x: 1, y: 0 };
+        const stepX = this.tileW + this.gap;
+        const stepY = this.tileH + this.gap;
+
+        for(let i=0;i<train.length;i++){
+          const t = train[i];
+          const isDouble = !!t.isDouble;
+          let rot = 0;
+          if(isDouble) rot = 0;
+          else rot = dir.x !== 0 ? 90 : 0;
+
+          layout.push({ id: t.id, a:t.a, b:t.b, owner:t.owner, isDouble, rot, x, y, dir:{...dir}, index:i, spinner: !!t.spinner });
+
+          let nx = x + dir.x * stepX;
+          let ny = y + dir.y * stepY;
+
+          const padding = Math.max(40, this.tileW);
+          const withinX = nx > padding && nx < (this.container.clientWidth - padding);
+          const withinY = ny > padding && ny < (this.container.clientHeight - padding);
+          if(!withinX || !withinY){
+            const newDir = { x: dir.y, y: -dir.x };
+            dir = newDir;
+            nx = x + dir.x * stepX;
+            ny = y + dir.y * stepY;
+          }
+
+          x = nx; y = ny;
+        }
+
+        return layout;
+      }
+
+      updateFromState(state){
+        this.lastState = state;
+        const layout = this.computeLayout(state.train);
+        const ids = new Set(layout.map(l=>l.id));
+        for(const [id,el] of this.placedElements.entries()){
+          if(!ids.has(id)){
+            el.remove();
+            this.placedElements.delete(id);
+          }
+        }
+        layout.forEach(item=>{
+          let el = this.placedElements.get(item.id);
+          if(!el){
+            el = this._createTileElement(item);
+            this.container.appendChild(el);
+            this.placedElements.set(item.id, el);
+          }
+          this._moveTileElement(el, item.x - this.tileW/2, item.y - this.tileH/2, item.rot, item.isDouble);
+        });
+      }
+
+      _createTileElement(item){
+        const el = document.createElement('div');
+        el.className = 'tile';
+        el.dataset.id = item.id;
+        const left = document.createElement('div'); left.className = 'half pips-'+item.a;
+        for(let i=0;i<this._pipCount(item.a);i++){ const p=document.createElement('div'); p.className='pip'; left.appendChild(p); }
+        const div = document.createElement('div'); div.className='divider';
+        const stud = document.createElement('div'); stud.className='stud'; div.appendChild(stud);
+        const right = document.createElement('div'); right.className = 'half pips-'+item.b;
+        for(let i=0;i<this._pipCount(item.b);i++){ const p=document.createElement('div'); p.className='pip'; right.appendChild(p); }
+        el.appendChild(left); el.appendChild(div); el.appendChild(right);
+        el.style.position = 'absolute';
+        el.style.left = `${this.origin.x - this.tileW/2}px`;
+        el.style.top = `${this.origin.y - this.tileH/2}px`;
+        el.style.width = `${this.tileW}px`;
+        el.style.height = `${this.tileH}px`;
+        el.style.transition = 'transform 260ms cubic-bezier(.2,.9,.3,1), left 260ms linear, top 260ms linear';
+        return el;
+      }
+
+      _moveTileElement(el, left, top, rot, isDouble){
+        el.style.left = `${left}px`;
+        el.style.top = `${top}px`;
+        const r = isDouble ? 0 : 90;
+        el.style.transform = `rotate(${r}deg) translateZ(0)`;
+      }
+
+      _pipCount(n){ return n===0 ? 1 : n; }
+
+      computeDropSide(clientX, clientY){
+        const rect = this.container.getBoundingClientRect();
+        const cx = rect.left + rect.width/2;
+        if(clientX < cx - rect.width*0.15) return 'left';
+        if(clientX > cx + rect.width*0.15) return 'right';
+        return 'middle';
+      }
+
+      requestPlace(handIndex, side, clientX, clientY){
+        const coords = { x: clientX, y: clientY };
+        return this.onPlaceRequest(handIndex, side, coords);
+      }
+    }
+
+    /* ============================
+       UI (hand rendering, drag/drop, interactions)
+       ============================ */
+    class UI {
+      constructor(opts = {}){
+        this.engine = opts.engine;
+        this.board = opts.board;
+        this.audio = opts.audio;
+        this.elements = opts.elements || {};
+        this.playerHandEl = this.elements.playerHand;
+        this.boneyardCountEl = this.elements.boneyardCount;
+        this.boneStackEl = this.elements.boneStack;
+        this.roundNumberEl = this.elements.roundNumber;
+        this.playerScoreEl = this.elements.playerScore;
+        this.aiScoreEl = this.elements.aiScore;
+        this.turnIndicatorEl = this.elements.turnIndicator;
+        this.statusTextEl = this.elements.statusText;
+        this.modalRoot = this.elements.modalRoot;
+        this.confettiCanvas = this.elements.confettiCanvas;
+        this.firstMoveTooltip = this.elements.firstMoveTooltip;
+
+        this._bindEngineEvents();
+        this._bindBoardUI();
+      }
+
+      _bindEngineEvents(){
+        this.engine.on('state', (s)=> this.updateFromState(s));
+        this.engine.on('tilePlaced', (info)=> {
+          this.flashStatus(`${info.by === 'player' ? 'أنت' : 'الخصم'} لعب ${info.tile.a}-${info.tile.b}`);
+          this.board.updateFromState(this.engine.getState());
+        });
+        this.engine.on('draw', ()=> {
+          this.updateFromState(this.engine.getState());
+        });
+        this.engine.on('victory', (winner)=> {
+          this.showVictory(winner);
+        });
+      }
+
+      _bindBoardUI(){
+        if(this.boneStackEl){
+          this.boneStackEl.addEventListener('click', ()=>{
+            if(this.engine.canPlayerDraw()){
+              const tile = this.engine.playerDraw();
+              if(tile){
+                this.flashStatus('سحبت قطعة');
+                this.audio.play('slide', { gain: 0.08 });
+              } else {
+                this.flashStatus('البونيارد فارغ');
+                this.audio.play('error', { gain: 0.06 });
+              }
+            }
+          });
+        }
+      }
+
+      updateFromState(state){
+        this._renderHand(state.hands.player);
+        this._updateBoneyard(state.boneyard.length);
+        this._updateScores(state.scores);
+        this._updateRound(state.round);
+        this._updateTurn(state.currentTurn);
+      }
+
+      _renderHand(hand){
+        this.playerHandEl.innerHTML = '';
+        hand.forEach((tile, idx)=>{
+          const el = document.createElement('div');
+          el.className = 'domino hand-tile';
+          el.dataset.index = idx;
+          el.dataset.tileId = tile.id;
+          el.style.width = `${parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tile-w')) || 96}px`;
+          el.style.height = `${parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tile-h')) || 56}px`;
+
+          const left = document.createElement('div'); left.className = 'half pips-'+tile.a;
+          for(let i=0;i<this._pipCount(tile.a);i++){ const p=document.createElement('div'); p.className='pip'; left.appendChild(p); }
+          const div = document.createElement('div'); div.className = 'divider';
+          const stud = document.createElement('div'); stud.className='stud'; div.appendChild(stud);
+          const right = document.createElement('div'); right.className = 'half pips-'+tile.b;
+          for(let i=0;i<this._pipCount(tile.b);i++){ const p=document.createElement('div'); p.className='pip'; right.appendChild(p); }
+          el.appendChild(left); el.appendChild(div); el.appendChild(right);
+
+          el.addEventListener('pointermove', (ev)=> this._onTilePointerMove(ev, el));
+          el.addEventListener('pointerleave', ()=> this._onTilePointerLeave(el));
+          el.addEventListener('pointerdown', (ev)=> this._onTilePointerDown(ev, el, idx));
+          el.addEventListener('click', (ev)=> this._onTileClick(ev, el, idx));
+
+          this.playerHandEl.appendChild(el);
+        });
+      }
+
+      _pipCount(n){ return n===0 ? 1 : n; }
+
+      _updateBoneyard(count){ if(this.boneyardCountEl) this.boneyardCountEl.textContent = count; }
+      _updateScores(scores){ if(this.playerScoreEl) this.playerScoreEl.textContent = scores.player; if(this.aiScoreEl) this.aiScoreEl.textContent = scores.ai; }
+      _updateRound(r){ if(this.roundNumberEl) this.roundNumberEl.textContent = r; }
+      _updateTurn(turn){
+        if(this.turnIndicatorEl) this.turnIndicatorEl.textContent = turn === 'player' ? 'دورك' : 'دور AI';
+        if(this.statusTextEl) this.statusTextEl.textContent = turn === 'player' ? 'قم بالحركة' : 'الخصم يفكر';
+      }
+
+      flashStatus(msg){
+        if(this.statusTextEl) this.statusTextEl.textContent = msg;
+        setTimeout(()=> {
+          const s = this.engine.getState();
+          this._updateTurn(s.currentTurn);
+        }, 1400);
+      }
+
+      showVictory(winner){
+        this.modalRoot.innerHTML = '';
+        const modal = document.createElement('div'); modal.className = 'modal';
+        modal.style.position = 'fixed';
+        modal.style.inset = '0';
+        modal.style.display = 'flex';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.style.zIndex = 2000;
+        const card = document.createElement('div'); card.className = 'modal-card';
+        card.style.background = 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))';
+        card.style.borderRadius = '12px';
+        card.style.padding = '18px';
+        card.style.boxShadow = '0 30px 80px rgba(0,0,0,0.7)';
+        card.innerHTML = `<h2 style="margin:0 0 8px 0">${winner === 'player' ? 'البطل — أنت!' : 'البطل — AI'}</h2>
+          <p style="color:var(--muted); margin:8px 0 12px 0;">انتهت المباراة — النتيجة النهائية</p>
+          <div style="font-size:20px; font-weight:900; margin:8px 0; color:var(--accent);">أنت: ${this.engine.scores.player} • AI: ${this.engine.scores.ai}</div>
+          <div style="display:flex; gap:12px; justify-content:center; margin-top:12px;">
+            <button id="play-again" class="btn">العب مرة أخرى</button>
+            <button id="close-match" class="btn">إغلاق</button>
+          </div>`;
+        modal.appendChild(card);
+        this.modalRoot.appendChild(modal);
+        this.modalRoot.style.display = 'block';
+        this.modalRoot.setAttribute('aria-hidden','false');
+
+        card.querySelector('#play-again').addEventListener('click', ()=>{
+          this.modalRoot.style.display = 'none';
+          this.modalRoot.innerHTML = '';
+          this.engine.startRound(true);
+        });
+        card.querySelector('#close-match').addEventListener('click', ()=>{
+          this.modalRoot.style.display = 'none';
+          this.modalRoot.innerHTML = '';
+        });
+      }
+
+      _onTilePointerMove(e, el){
+        const rect = el.getBoundingClientRect();
+        const cx = rect.left + rect.width/2;
+        const cy = rect.top + rect.height/2;
+        const dx = (e.clientX - cx) / rect.width;
+        const dy = (e.clientY - cy) / rect.height;
+        const rx = dy * 6;
+        const ry = -dx * 8;
+        el.style.transform = `perspective(800px) rotateX(${rx}deg) rotateY(${ry}deg) translateZ(8px)`;
+      }
+      _onTilePointerLeave(el){
+        el.style.transform = `perspective(800px) rotateX(2deg) rotateY(-1deg) translateZ(0)`;
+      }
+
+      _onTilePointerDown(e, el, handIndex){
+        if(this.engine.currentTurn !== 'player' || this.engine.animLock) return;
+        e.preventDefault();
+        el.setPointerCapture(e.pointerId);
+        el.classList.add('dragging');
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const origRect = el.getBoundingClientRect();
+        const offsetX = startX - origRect.left;
+        const offsetY = startY - origRect.top;
+
+        const move = (ev)=>{
+          el.style.position = 'fixed';
+          el.style.left = `${ev.clientX - offsetX}px`;
+          el.style.top = `${ev.clientY - offsetY}px`;
+          const side = this.board.computeDropSide(ev.clientX, ev.clientY);
+          const hintLeft = document.getElementById('hint-left');
+          const hintRight = document.getElementById('hint-right');
+          if(hintLeft && hintRight){
+            hintLeft.classList.remove('show'); hintRight.classList.remove('show');
+            if(side === 'left') hintLeft.classList.add('show');
+            if(side === 'right') hintRight.classList.add('show');
+          }
+        };
+
+        const up = (ev)=>{
+          try{ el.releasePointerCapture(e.pointerId); }catch(_){}
+          el.classList.remove('dragging');
+          document.removeEventListener('pointermove', move);
+          document.removeEventListener('pointerup', up);
+          const side = this.board.computeDropSide(ev.clientX, ev.clientY);
+          const result = this.board.requestPlace(handIndex, side, ev.clientX, ev.clientY);
+          if(result && result.success){
+            this.audio.play('clack', { gain: 0.12 });
+          } else {
+            el.style.transition = 'left 260ms cubic-bezier(.2,.9,.3,1), top 260ms cubic-bezier(.2,.9,.3,1), transform 260ms';
+            el.style.left = '';
+            el.style.top = '';
+            setTimeout(()=> { el.style.transition = ''; }, 300);
+            this.audio.play('error', { gain: 0.06 });
+          }
+          const hintLeft = document.getElementById('hint-left');
+          const hintRight = document.getElementById('hint-right');
+          if(hintLeft) hintLeft.classList.remove('show');
+          if(hintRight) hintRight.classList.remove('show');
+        };
+
+        document.addEventListener('pointermove', move);
+        document.addEventListener('pointerup', up, { once:true });
+      }
+
+      _onTileClick(e, el, handIndex){
+        const rect = this.board.container.getBoundingClientRect();
+        const cx = rect.left + rect.width/2;
+        const side = (e.clientX < cx) ? 'left' : 'right';
+        const result = this.board.requestPlace(handIndex, side, e.clientX, e.clientY);
+        if(result && result.success){
+          this.audio.play('clack', { gain: 0.12 });
+        } else {
+          this.flashStatus('القطعة غير قابلة للعب');
+          this.audio.play('error', { gain: 0.06 });
+        }
+      }
+    }
+
+    /* ============================
+       Confetti helper
+       ============================ */
+    function startConfetti(canvas){
+      if(!canvas) return;
+      canvas.style.display='block';
+      canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+      const ctx = canvas.getContext('2d'); const pieces=[];
+      const colors = ['#ffd166','#7ef9ff','#ff7ab6','#9bffb8','#ffd1a9'];
+      for(let i=0;i<120;i++){
+        pieces.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height - canvas.height, w: 6 + Math.random()*10, h: 6 + Math.random()*10, vx: -2 + Math.random()*4, vy: 2 + Math.random()*6, r: Math.random()*360, vr: -6 + Math.random()*12, color: colors[Math.floor(Math.random()*colors.length)], opacity: 0.8 + Math.random()*0.2 });
+      }
+      let anim = null;
+      (function loop(){ ctx.clearRect(0,0,canvas.width,canvas.height); pieces.forEach(p=>{ p.x += p.vx; p.y += p.vy; p.r += p.vr; ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.r * Math.PI/180); ctx.fillStyle = p.color; ctx.globalAlpha = p.opacity; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore(); if(p.y > canvas.height + 40){ p.y = -40; p.x = Math.random()*canvas.width; } }); anim = requestAnimationFrame(loop); })();
+      setTimeout(()=>{ if(anim) cancelAnimationFrame(anim); canvas.style.display='none'; }, 6000);
+    }
+
+    /* ============================
+       Bootstrap: initialize everything
+       ============================ */
+    (function bootstrap(){
+      const audio = AudioManager();
+      audio.setMasterVolume(0.9);
+
+      const engine = new Engine({ targetScore: 101 });
+
+      const board = new Board({
+        container: document.getElementById('board-canvas'),
+        tileWidth: parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tile-w')) || 96,
+        tileHeight: parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tile-h')) || 56,
+        onPlaceRequest: (handIndex, side, coords) => {
+          const result = engine.attemptPlaceFromPlayer(handIndex, side, coords);
+          if(result.success){
+            audio.play('clack', { gain: 0.12, pitch: 1 + (result.tile.a + result.tile.b)/24 });
+          } else {
+            audio.play('error', { gain: 0.06 });
+          }
+          return result;
+        }
+      });
+
+      const ui = new UI({
+        engine,
+        board,
+        audio,
+        elements: {
+          playerHand: document.getElementById('player-hand'),
+          boneyardCount: document.getElementById('boneyard-count'),
+          boneStack: document.getElementById('bone-stack'),
+          roundNumber: document.getElementById('round-number'),
+          playerScore: document.getElementById('player-score'),
+          aiScore: document.getElementById('ai-score'),
+          turnIndicator: document.getElementById('turn-indicator'),
+          statusText: document.getElementById('status-text'),
+          modalRoot: document.getElementById('modal-root'),
+          confettiCanvas: document.getElementById('confetti'),
+          firstMoveTooltip: document.getElementById('first-move-tooltip')
+        }
+      });
+
+      engine.on('state', (state) => {
+        ui.updateFromState(state);
+        board.updateFromState(state);
+      });
+
+      engine.on('roundStart', (info) => {
+        audio.play('shuffle', { gain: 0.06 });
+        setTimeout(()=> audio.stop('shuffle'), 900);
+      });
+
+      engine.on('tilePlaced', (info) => {
+        audio.play('clack', { gain: 0.12, pitch: 1 + (info.tile.a + info.tile.b)/24 });
+        board.updateFromState(engine.getState());
+      });
+
+      engine.on('draw', (payload) => {
+        audio.play('slide', { gain: 0.08 });
+      });
+
+      engine.on('victory', (winner) => {
+        audio.play('fanfare', { gain: 0.18 });
+        startConfetti(document.getElementById('confetti'));
+        ui.showVictory(winner);
+      });
+
+      document.getElementById('reset-match').addEventListener('click', () => {
+        if(confirm('إعادة المباراة وإعادة ضبط النقاط؟')) engine.resetMatch();
+      });
+
+      document.getElementById('bone-stack').addEventListener('click', () => {
+        if(engine.canPlayerDraw()){
+          const tile = engine.playerDraw();
+          if(tile){
+            ui.flashStatus('سحبت قطعة');
+            audio.play('slide', { gain: 0.08 });
+          } else {
+            ui.flashStatus('البونيارد فارغ');
+            audio.play('error', { gain: 0.06 });
+          }
+        }
+      });
+
+      // Start
+      engine.initMatch();
+
+      // Expose for debugging
+      window.DOMINO = { engine, board, ui, audio };
+    })();
+  </script>
+</body>
+    </html>

@@ -130,6 +130,7 @@ canvas#board.armed{box-shadow:inset 0 2px 24px rgba(0,0,0,.5),0 0 42px rgba(93,2
   .hand{gap:4px}
 }
 </style>
+<base target="_blank">
 </head>
 <body>
 <div class="app">
@@ -722,7 +723,7 @@ function showModal(title, bodyHtml, buttons){
       mActions.appendChild(btn);
     });
     modal.hidden = false;
-    var first = mActions.querySelector('.primary') || mActions.firstChild;
+    var first = mActions.querySelector('.primary') || mActions.firstElementChild;
     if (first) first.focus();
   });
 }
@@ -1068,7 +1069,7 @@ function zoneAt(clientX, clientY){
   };
   if (state.firstMove){ if (z.left) check('right', layout.ends.left); }
   else {
-    if (z.left)  check('left',  layout.ends.left);
+    if (z.left) check('left', layout.ends.left);
     if (z.right) check('right', layout.ends.right);
   }
   return best;
@@ -1311,4 +1312,4 @@ else boot();
 })();
 </script>
 </body>
-</html>
+  </html>
